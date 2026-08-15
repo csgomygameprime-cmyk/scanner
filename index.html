@@ -346,7 +346,7 @@
             transform: translateZ(20px);
         }
 
-        /* Переключатель: Все vs Моя группа (С аппаратным ускорением) */
+        /* Переключатель: Все vs Моя группа */
         .mode-toggle-container {
             display: flex;
             width: 100%;
@@ -391,7 +391,7 @@
             transform: scale(0.96);
         }
 
-        /* Неоновая кнопка сканера */
+        /* Неоновая кнопка сканера (Оптимизирована под 0-latency) */
         .cyber-btn {
             position: relative;
             width: 100%;
@@ -411,9 +411,11 @@
             justify-content: center;
             gap: 10px;
             box-shadow: 0 10px 30px rgba(124, 58, 237, 0.55), 0 0 22px rgba(168, 85, 247, 0.35);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateZ(30px);
+            transition: transform 0.08s ease, filter 0.08s ease;
+            transform: translate3d(0, 0, 30px);
+            will-change: transform;
             touch-action: manipulation;
+            contain: layout style;
         }
 
         .cyber-btn::before {
@@ -433,7 +435,8 @@
         }
 
         .cyber-btn:active {
-            transform: translateZ(20px) scale(0.95);
+            transform: translate3d(0, 0, 20px) scale(0.96);
+            filter: brightness(1.15);
         }
 
         .cyber-btn svg {
@@ -538,6 +541,7 @@
         }
 
         let currentMode = localStorage.getItem('qr_target_mode') || 'ALL';
+        let isOpeningScanner = false;
 
         // ============ ОПТИМИЗИРОВАННЫЙ АУДИО-СИНГЛТОН ============
         let audioCtx = null;
@@ -612,9 +616,8 @@
             }
         }
 
-        // ============ МГНОВЕННЫЙ ПЕРЕКЛЮЧАТЕЛЬ БЕЗ ЛАГОВ ============
         function selectMode(mode) {
-            if (currentMode === mode) return; // Исключаем холостые перерисовки
+            if (currentMode === mode) return;
 
             currentMode = mode;
             try {
@@ -629,34 +632,44 @@
             updateUI();
         }
 
+        // ============ МГНОВЕННЫЙ СТАРТ СКАНЕРА БЕЗ ФРИЗА ============
         function startScanner() {
+            if (isOpeningScanner) return;
+            isOpeningScanner = true;
+
+            // 1. Мгновенная тактильная и аудио отдача
             playSciFiBeep(920, 0.08);
             if (tg?.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('medium');
             }
 
-            if (tg?.showScanQrPopup) {
-                const targetText = currentMode === 'ALL' ? 'всех аккаунтов' : 'моей группы';
-                tg.showScanQrPopup({ text: `⚡ Отметка для: ${targetText}` }, function(text) {
-                    if (text) {
-                        if (tg?.HapticFeedback) {
-                            tg.HapticFeedback.notificationOccurred('success');
+            // 2. Откладываем вызов нативного окна на следующий кадр рендера (0-latency decoupling)
+            setTimeout(() => {
+                if (tg?.showScanQrPopup) {
+                    const targetText = currentMode === 'ALL' ? 'всех аккаунтов' : 'моей группы';
+                    tg.showScanQrPopup({ text: `⚡ Отметка для: ${targetText}` }, function(text) {
+                        isOpeningScanner = false;
+                        if (text) {
+                            if (tg?.HapticFeedback) {
+                                tg.HapticFeedback.notificationOccurred('success');
+                            }
+                            const payload = JSON.stringify({
+                                url: text.trim(),
+                                group: currentMode
+                            });
+                            tg.sendData(payload);
+                            tg.close();
+                            return true;
                         }
-                        const payload = JSON.stringify({
-                            url: text.trim(),
-                            group: currentMode
-                        });
-                        tg.sendData(payload);
-                        tg.close();
-                        return true;
-                    }
-                });
-            } else {
-                alert("Сканер запускается через мобильное приложение Telegram");
-            }
+                    });
+                } else {
+                    isOpeningScanner = false;
+                    alert("Сканер запускается через мобильное приложение Telegram");
+                }
+            }, 30);
         }
 
-        // ============ 3D CANVAS ДВИЖОК: ПАРИРУЮЩАЯ ГЕОМЕТРИЯ ============
+        // ============ 3D CANVAS ДВИЖОК ============
         const canvas = document.getElementById('cyber-canvas');
         const ctx = canvas.getContext('2d');
         let width, height;
