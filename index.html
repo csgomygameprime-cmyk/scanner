@@ -45,7 +45,7 @@
             perspective: 1100px;
         }
 
-        /* 60 FPS Фоновый Canvas (Сетка + Парящие Частицы) */
+        /* 60 FPS Фоновый Canvas (Сетка + Частицы) */
         #cyber-canvas {
             position: fixed;
             top: 0;
@@ -56,12 +56,12 @@
             pointer-events: none;
         }
 
-        /* Фоновые радиальные туманности */
+        /* Неоновые светящиеся сферы */
         .ambient-glow-1 {
             position: absolute;
             width: 320px;
             height: 320px;
-            background: radial-gradient(circle, rgba(168, 85, 247, 0.42) 0%, rgba(124, 58, 237, 0) 70%);
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.45) 0%, rgba(124, 58, 237, 0) 70%);
             filter: blur(65px);
             z-index: 0;
             pointer-events: none;
@@ -115,7 +115,7 @@
             overflow: hidden;
         }
 
-        /* Динамический световой блик на гранях */
+        /* Динамический световой блик */
         .card-specular-glare {
             position: absolute;
             inset: 0;
@@ -595,79 +595,51 @@
         resizeCanvas();
         requestAnimationFrame(drawBackground);
 
-        // ============ ЧИСТЫЙ ФИЗИЧЕСКИЙ 3D-ГИРОСКОП (БЕЗ АВТОВРАЩЕНИЯ) ============
+        // ============ МГНОВЕННЫЙ 3D-ДВИЖОК С ПАССИВНЫМ ГИРОСКОПОМ ============
         const hudScene = document.getElementById('hud-scene');
         const cameraRig = document.getElementById('camera-rig');
         const glare = document.getElementById('specular-glare');
 
-        let targetRotX = 0;
-        let targetRotY = 0;
-        let curRotX = 0;
-        let curRotY = 0;
+        let gyroX = 0;
+        let gyroY = 0;
 
-        // Плавная физическая интерполяция (Lerp)
-        function render3DPhysics() {
-            curRotX += (targetRotX - curRotX) * 0.12;
-            curRotY += (targetRotY - curRotY) * 0.12;
+        // Пассивный сбор данных наклона без системных запросов разрешений
+        window.addEventListener('deviceorientation', (e) => {
+            if (e.beta !== null && e.gamma !== null) {
+                const deltaBeta = Math.max(-30, Math.min(30, e.beta - 45));
+                const deltaGamma = Math.max(-30, Math.min(30, e.gamma));
+                gyroX = -deltaBeta * 0.35;
+                gyroY = deltaGamma * 0.45;
+            }
+        }, { passive: true });
 
-            // Наклон всей карточки вслед за положением телефона
-            hudScene.style.transform = `rotateX(${curRotX.toFixed(2)}deg) rotateY(${curRotY.toFixed(2)}deg)`;
+        // Автономное 3D вращение + наложение наклона
+        function animate3DScene(now) {
+            const t = now * 0.001;
 
-            // Усиленный объемный наклон фотоаппарата
-            cameraRig.style.transform = `rotateX(${(-curRotX * 1.6).toFixed(2)}deg) rotateY(${(-curRotY * 1.6).toFixed(2)}deg)`;
+            // Базовое парение + наклон
+            const cardRotX = Math.sin(t * 1.1) * 5.0 + gyroX;
+            const cardRotY = Math.cos(t * 0.85) * 6.5 + gyroY;
+            const cardFloatY = Math.sin(t * 1.4) * 5.0;
 
-            // Динамический перелив светового блика по карточке
-            const glareX = 50 + curRotY * 2.2;
-            const glareY = 50 - curRotX * 2.2;
+            hudScene.style.transform = `translateY(${cardFloatY.toFixed(2)}px) rotateX(${cardRotX.toFixed(2)}deg) rotateY(${cardRotY.toFixed(2)}deg)`;
+
+            // 3D-риг фотоаппарата
+            const camRotX = Math.sin(t * 1.6) * 12.0 - gyroX * 0.5;
+            const camRotY = Math.sin(t * 1.0) * 20.0 + gyroY * 0.5;
+            const camRollZ = Math.cos(t * 0.7) * 6.0;
+
+            cameraRig.style.transform = `rotateX(${camRotX.toFixed(2)}deg) rotateY(${camRotY.toFixed(2)}deg) rotateZ(${camRollZ.toFixed(2)}deg)`;
+
+            // Световой блик
+            const glareX = 50 + Math.cos(t * 0.85) * 28.0 + gyroY * 1.5;
+            const glareY = 50 - Math.sin(t * 1.1) * 28.0 - gyroX * 1.5;
             glare.style.background = `radial-gradient(circle at ${glareX.toFixed(1)}% ${glareY.toFixed(1)}%, rgba(255, 255, 255, 0.28) 0%, rgba(192, 132, 252, 0.06) 45%, transparent 75%)`;
 
-            requestAnimationFrame(render3DPhysics);
-        }
-        requestAnimationFrame(render3DPhysics);
-
-        // Обработка данных аппаратного гироскопа сразу при загрузке
-        function handleDeviceOrientation(e) {
-            if (e.beta === null || e.gamma === null) return;
-
-            // Естественный угол хвата смартфона в руке (~45 градусов)
-            let deltaBeta = e.beta - 45; // Тангаж (наклон вперед/назад)
-            let deltaGamma = e.gamma;    // Крен (наклон влево/вправо)
-
-            // Ограничиваем максимальный угол наклона для предотвращения искажений
-            deltaBeta = Math.max(-30, Math.min(30, deltaBeta));
-            deltaGamma = Math.max(-30, Math.min(30, deltaGamma));
-
-            targetRotX = -deltaBeta * 0.65;
-            targetRotY = deltaGamma * 0.75;
+            requestAnimationFrame(animate3DScene);
         }
 
-        // Подключаем слушатель гироскопа мгновенно
-        window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
-
-        // Авто-запрос прав для iOS при самом первом любом взаимодействии
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            const requestGyroPermission = async () => {
-                try {
-                    const res = await DeviceOrientationEvent.requestPermission();
-                    if (res === 'granted') {
-                        window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
-                    }
-                } catch(e) {}
-            };
-            window.addEventListener('touchstart', requestGyroPermission, { once: true, passive: true });
-        }
-
-        // Для ПК: управление движением мыши (сенсорные тапы игнорируются)
-        window.addEventListener('pointermove', (e) => {
-            if (e.pointerType !== 'mouse') return;
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-            const normX = (e.clientX - centerX) / centerX;
-            const normY = (e.clientY - centerY) / centerY;
-
-            targetRotY = normX * 16;
-            targetRotX = -normY * 16;
-        }, { passive: true });
+        requestAnimationFrame(animate3DScene);
 
         window.onload = () => {
             updateUI();
