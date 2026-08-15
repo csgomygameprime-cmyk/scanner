@@ -365,9 +365,11 @@
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
 
         let currentMode = localStorage.getItem('qr_target_mode') || 'ALL';
 
@@ -409,19 +411,26 @@
             currentMode = mode;
             localStorage.setItem('qr_target_mode', mode);
             playSciFiBeep();
-            if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            if (tg?.HapticFeedback) {
+                tg.HapticFeedback.selectionChanged();
+            }
             updateUI();
         }
 
         function startScanner() {
             playSciFiBeep();
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            if (tg?.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
 
-            if (tg.showScanQrPopup) {
+            if (tg?.showScanQrPopup) {
                 const targetText = currentMode === 'ALL' ? 'всех аккаунтов' : 'моей группы';
                 tg.showScanQrPopup({ text: `⚡ Отметка для: ${targetText}` }, function(text) {
                     if (text) {
-                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        // Вибрация успеха при мгновенном считывании QR
+                        if (tg?.HapticFeedback) {
+                            tg.HapticFeedback.notificationOccurred('success');
+                        }
                         
                         const payload = JSON.stringify({
                             url: text.trim(),
