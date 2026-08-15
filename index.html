@@ -1,0 +1,236 @@
+!DOCTYPE html
+html lang=ru
+head
+    meta charset=UTF-8
+    meta name=viewport content=width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no
+    title⚡ QR Scanner Pulsetitle
+    !-- Telegram WebApp SDK --
+    script src=httpstelegram.orgjstelegram-web-app.jsscript
+    style
+         {
+            box-sizing border-box;
+            margin 0;
+            padding 0;
+            user-select none;
+            -webkit-user-select none;
+        }
+
+        body {
+            background radial-gradient(circle at 50% 20%, #2e1065 0%, #0f0728 60%, #070314 100%);
+            color #f3f4f6;
+            font-family -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            min-height 100vh;
+            display flex;
+            align-items center;
+            justify-content center;
+            padding 20px;
+            overflow hidden;
+        }
+
+         Фоновые неоновые сферы 
+        .glow-orb {
+            position absolute;
+            width 260px;
+            height 260px;
+            background radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(124, 58, 237, 0) 70%);
+            filter blur(40px);
+            z-index 0;
+            pointer-events none;
+            animation float 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes float {
+            0% { transform translate(-20px, -20px) scale(0.9); }
+            100% { transform translate(20px, 20px) scale(1.1); }
+        }
+
+         Стеклянная карточка 
+        .glass-card {
+            position relative;
+            z-index 1;
+            width 100%;
+            max-width 360px;
+            background rgba(255, 255, 255, 0.04);
+            border 1px solid rgba(168, 85, 247, 0.25);
+            border-radius 28px;
+            padding 36px 24px;
+            backdrop-filter blur(24px);
+            -webkit-backdrop-filter blur(24px);
+            box-shadow 0 20px 50px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.2),
+                        0 0 30px rgba(139, 92, 246, 0.15);
+            display flex;
+            flex-direction column;
+            align-items center;
+            text-align center;
+        }
+
+         Анимированная иконка сканера 
+        .scanner-visual {
+            position relative;
+            width 90px;
+            height 90px;
+            border-radius 22px;
+            background linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(79, 70, 229, 0.1) 100%);
+            border 1px solid rgba(192, 132, 252, 0.3);
+            display flex;
+            align-items center;
+            justify-content center;
+            margin-bottom 24px;
+            box-shadow 0 8px 24px rgba(126, 34, 206, 0.25);
+        }
+
+        .scanner-visual svg {
+            width 44px;
+            height 44px;
+            fill #c084fc;
+            filter drop-shadow(0 0 10px rgba(192, 132, 252, 0.6));
+        }
+
+         Лазерная полоса сканера 
+        .laser-line {
+            position absolute;
+            width 80%;
+            height 2px;
+            background linear-gradient(90deg, transparent, #c084fc, #f472b6, transparent);
+            box-shadow 0 0 8px #c084fc;
+            animation scan 2.2s ease-in-out infinite alternate;
+        }
+
+        @keyframes scan {
+            0% { top 15%; opacity 0.3; }
+            100% { top 85%; opacity 1; }
+        }
+
+        h1 {
+            font-size 22px;
+            font-weight 700;
+            letter-spacing -0.5px;
+            background linear-gradient(135deg, #ffffff 0%, #e9d5ff 100%);
+            -webkit-background-clip text;
+            -webkit-text-fill-color transparent;
+            margin-bottom 8px;
+        }
+
+        p {
+            font-size 13.5px;
+            color #a855f7;
+            opacity 0.85;
+            line-height 1.4;
+            margin-bottom 32px;
+        }
+
+         Неоновая кнопка 
+        .action-btn {
+            position relative;
+            width 100%;
+            padding 16px 20px;
+            font-size 16px;
+            font-weight 600;
+            color #ffffff;
+            background linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+            border none;
+            border-radius 18px;
+            cursor pointer;
+            overflow hidden;
+            transition all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow 0 10px 25px rgba(124, 58, 237, 0.4),
+                        0 0 20px rgba(99, 102, 241, 0.25);
+            display flex;
+            align-items center;
+            justify-content center;
+            gap 10px;
+        }
+
+        .action-btnactive {
+            transform scale(0.97);
+            box-shadow 0 5px 15px rgba(124, 58, 237, 0.3);
+        }
+
+        .action-btn svg {
+            width 20px;
+            height 20px;
+            fill #ffffff;
+        }
+
+         Статус внизу 
+        .badge {
+            margin-top 20px;
+            display inline-flex;
+            align-items center;
+            gap 6px;
+            font-size 12px;
+            font-weight 500;
+            color #d8b4fe;
+            background rgba(168, 85, 247, 0.12);
+            padding 6px 14px;
+            border-radius 20px;
+            border 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .badge-dot {
+            width 6px;
+            height 6px;
+            background #a855f7;
+            border-radius 50%;
+            box-shadow 0 0 8px #a855f7;
+            animation pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity 1; transform scale(1); }
+            50% { opacity 0.4; transform scale(0.8); }
+        }
+    style
+head
+body
+
+    div class=glow-orbdiv
+
+    div class=glass-card
+        div class=scanner-visual
+            div class=laser-linediv
+            !-- Иконка QR --
+            svg viewBox=0 0 24 24
+                path d=M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h3v2h-3v-2zm-5 0h3v3h-3v-3zm2 5h4v2h-4v-2zm3-3h2v2h-2v-2zm-5 3h2v2h-2v-2z
+            svg
+        div
+
+        h1Fast QR Scannerh1
+        pНаведите камеру на QR-код для моментальной отправки отметокp
+
+        button class=action-btn onclick=startScanner()
+            svg viewBox=0 0 24 24
+                path d=M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z
+            svg
+            spanВключить камеруspan
+        button
+
+        div class=badge
+            div class=badge-dotdiv
+            spanUltra-Fast Pipeline (0.1s)span
+        div
+    div
+
+    script
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        function startScanner() {
+            tg.showScanQrPopup({ text Наведите камеру на QR-код пары }, function(text) {
+                if (text) {
+                    tg.sendData(text.trim());
+                    tg.close();
+                    return true;
+                }
+            });
+        }
+
+         Авто-запуск сканера сразу при входе в WebApp
+        window.onload = () = {
+            setTimeout(startScanner, 200);
+        };
+    script
+body
+html
