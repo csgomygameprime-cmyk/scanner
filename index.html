@@ -391,7 +391,7 @@
             transform: scale(0.96);
         }
 
-        /* Неоновая кнопка сканера (Оптимизирована под 0-latency) */
+        /* Неоновая кнопка сканера */
         .cyber-btn {
             position: relative;
             width: 100%;
@@ -531,6 +531,8 @@
     <div style="height: 10px;"></div>
 
     <script>
+        let isOpeningScanner = false;
+
         const tg = window.Telegram?.WebApp;
         if (tg) {
             tg.ready();
@@ -538,10 +540,14 @@
             if (tg.disableVerticalSwipes) {
                 tg.disableVerticalSwipes();
             }
+            
+            // ФИКС: Снимаем блокировку, если сканер закрыли кнопкой "Отмена"
+            tg.onEvent('scanQrPopupClosed', () => {
+                isOpeningScanner = false;
+            });
         }
 
         let currentMode = localStorage.getItem('qr_target_mode') || 'ALL';
-        let isOpeningScanner = false;
 
         // ============ ОПТИМИЗИРОВАННЫЙ АУДИО-СИНГЛТОН ============
         let audioCtx = null;
@@ -637,18 +643,16 @@
             if (isOpeningScanner) return;
             isOpeningScanner = true;
 
-            // 1. Мгновенная тактильная и аудио отдача
             playSciFiBeep(920, 0.08);
             if (tg?.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('medium');
             }
 
-            // 2. Откладываем вызов нативного окна на следующий кадр рендера (0-latency decoupling)
             setTimeout(() => {
                 if (tg?.showScanQrPopup) {
                     const targetText = currentMode === 'ALL' ? 'всех аккаунтов' : 'моей группы';
                     tg.showScanQrPopup({ text: `⚡ Отметка для: ${targetText}` }, function(text) {
-                        isOpeningScanner = false;
+                        // isOpeningScanner = false обрабатывается в onEvent('scanQrPopupClosed')
                         if (text) {
                             if (tg?.HapticFeedback) {
                                 tg.HapticFeedback.notificationOccurred('success');
