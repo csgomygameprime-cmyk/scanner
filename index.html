@@ -6,6 +6,9 @@
     <title>⚡ PULSE CYBER SCANNER</title>
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Универсальный высокоскоростной QR-декодер для iOS / Android fallback -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
     <style>
         * {
             box-sizing: border-box;
@@ -13,6 +16,7 @@
             padding: 0;
             user-select: none;
             -webkit-user-select: none;
+            touch-action: manipulation;
         }
 
         :root {
@@ -20,6 +24,7 @@
             --neon-violet: #9333ea;
             --neon-pink: #f43f5e;
             --neon-cyan: #38bdf8;
+            --neon-green: #22c55e;
             --bg-dark: #060212;
         }
 
@@ -37,49 +42,30 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 16px;
+            padding: 12px;
             overflow: hidden;
             position: relative;
         }
 
-        /* Неоновые светящиеся сферы */
         .ambient-glow-1 {
             position: absolute;
             width: 320px;
             height: 320px;
-            background: radial-gradient(circle, rgba(168, 85, 247, 0.5) 0%, rgba(124, 58, 237, 0) 70%);
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(124, 58, 237, 0) 70%);
             filter: blur(65px);
             z-index: 0;
             pointer-events: none;
-            animation: pulse-glow 6s ease-in-out infinite alternate;
         }
 
-        .ambient-glow-2 {
-            position: absolute;
-            bottom: -50px;
-            width: 280px;
-            height: 280px;
-            background: radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, rgba(147, 51, 234, 0) 70%);
-            filter: blur(55px);
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        @keyframes pulse-glow {
-            0% { transform: scale(0.9) translate(-10px, -10px); opacity: 0.7; }
-            100% { transform: scale(1.15) translate(15px, 15px); opacity: 1; }
-        }
-
-        /* Главная голографическая карточка */
         .hud-card {
             position: relative;
             z-index: 1;
             width: 100%;
-            max-width: 360px;
-            background: rgba(18, 10, 36, 0.75);
+            max-width: 380px;
+            background: rgba(18, 10, 36, 0.82);
             border: 1px solid rgba(192, 132, 252, 0.4);
-            border-radius: 32px;
-            padding: 28px 22px;
+            border-radius: 28px;
+            padding: 20px 16px;
             backdrop-filter: blur(35px);
             -webkit-backdrop-filter: blur(35px);
             box-shadow: 
@@ -92,19 +78,6 @@
             text-align: center;
         }
 
-        /* Угловые прицелы */
-        .corner {
-            position: absolute;
-            width: 14px;
-            height: 14px;
-            border-color: var(--neon-purple);
-            pointer-events: none;
-        }
-        .corner-tl { top: 12px; left: 12px; border-top: 2px solid; border-left: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
-        .corner-tr { top: 12px; right: 12px; border-top: 2px solid; border-right: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
-        .corner-bl { bottom: 12px; left: 12px; border-bottom: 2px solid; border-left: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
-        .corner-br { bottom: 12px; right: 12px; border-bottom: 2px solid; border-right: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
-
         .top-telemetry {
             display: flex;
             align-items: center;
@@ -116,6 +89,7 @@
             color: rgba(216, 180, 254, 0.85);
             font-family: monospace;
             margin-bottom: 12px;
+            padding: 0 4px;
         }
 
         .status-dot {
@@ -134,115 +108,195 @@
             50% { opacity: 0.3; }
         }
 
-        /* 3D-Элемент сканера */
-        .hero-3d-wrapper {
+        /* Видоискатель сканера */
+        .camera-viewport {
             position: relative;
-            width: 110px;
-            height: 110px;
-            margin: 6px 0 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            perspective: 600px;
-        }
-
-        .hero-3d-cube {
-            position: relative;
-            width: 82px;
-            height: 82px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(99, 102, 241, 0.15) 100%);
-            border: 1px solid rgba(216, 180, 254, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 42px;
-            box-shadow: 
-                0 15px 35px rgba(124, 58, 237, 0.45),
-                inset 0 0 20px rgba(192, 132, 252, 0.3);
-            animation: float-3d 4s ease-in-out infinite alternate;
-            transform-style: preserve-3d;
-        }
-
-        .hero-3d-cube .emoji-3d {
-            display: inline-block;
-            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6)) drop-shadow(0 0 14px rgba(192, 132, 252, 0.8));
-            animation: pulse-emoji 2.5s ease-in-out infinite alternate;
-        }
-
-        /* Вращающееся неоновое кольцо вокруг 3D-иконки */
-        .ring-orb {
-            position: absolute;
-            inset: 4px;
-            border-radius: 50%;
-            border: 2px dashed rgba(56, 189, 248, 0.5);
-            animation: rotate-ring 10s linear infinite;
-        }
-
-        @keyframes float-3d {
-            0% { transform: translateY(-4px) rotateX(10deg) rotateY(-8deg); }
-            100% { transform: translateY(6px) rotateX(-8deg) rotateY(10deg); }
-        }
-
-        @keyframes pulse-emoji {
-            0% { transform: scale(0.95); }
-            100% { transform: scale(1.08); }
-        }
-
-        @keyframes rotate-ring {
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Лазерный луч сканера */
-        .laser-beam {
-            position: absolute;
-            left: 5%;
-            width: 90%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #ffffff, var(--neon-purple), var(--neon-pink), transparent);
-            box-shadow: 0 0 12px var(--neon-purple), 0 0 20px var(--neon-pink);
-            animation: laser-sweep 2s ease-in-out infinite alternate;
-        }
-
-        @keyframes laser-sweep {
-            0% { top: 12%; opacity: 0.3; }
-            100% { top: 88%; opacity: 1; }
-        }
-
-        h1 {
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 50%, #c084fc 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 2px;
-            text-transform: uppercase;
-        }
-
-        .subtitle {
-            font-size: 12.5px;
-            color: #d8b4fe;
-            opacity: 0.85;
+            width: 100%;
+            height: 270px;
+            background: #000000;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 8px 25px rgba(0,0,0,0.5);
             margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
         }
 
-        /* Переключатель: Все vs Моя группа */
+        #camera-video {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform-origin: center center;
+            transition: transform 0.08s ease-out;
+        }
+
+        #camera-canvas {
+            display: none;
+        }
+
+        /* Неоновая рамка-прицел */
+        .target-reticle {
+            position: absolute;
+            width: 190px;
+            height: 190px;
+            border-radius: 18px;
+            border: 2px solid var(--neon-purple);
+            box-shadow: 0 0 18px rgba(192, 132, 252, 0.45), inset 0 0 18px rgba(192, 132, 252, 0.2);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .target-reticle .corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-color: inherit;
+        }
+
+        .corner-tl { top: -2px; left: -2px; border-top: 3px solid; border-left: 3px solid; }
+        .corner-tr { top: -2px; right: -2px; border-top: 3px solid; border-right: 3px solid; }
+        .corner-bl { bottom: -2px; left: -2px; border-bottom: 3px solid; border-left: 3px solid; }
+        .corner-br { bottom: -2px; right: -2px; border-bottom: 3px solid; border-right: 3px solid; }
+
+        .laser-line {
+            position: absolute;
+            width: 92%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ffffff, var(--neon-purple), transparent);
+            box-shadow: 0 0 10px var(--neon-purple);
+            animation: sweep 1.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes sweep {
+            0% { top: 8%; opacity: 0.3; }
+            100% { top: 92%; opacity: 1; }
+        }
+
+        /* Состояние фиксации QR (зеленый лок) */
+        .target-reticle.locked {
+            border-color: var(--neon-green) !important;
+            box-shadow: 0 0 35px var(--neon-green), inset 0 0 25px var(--neon-green) !important;
+            transform: scale(1.05);
+        }
+
+        .target-reticle.locked .laser-line {
+            background: linear-gradient(90deg, transparent, #ffffff, var(--neon-green), transparent);
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+
+        /* Индикатор текущего зума на видео */
+        .zoom-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(18, 10, 36, 0.85);
+            border: 1px solid rgba(192, 132, 252, 0.5);
+            border-radius: 10px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-family: monospace;
+            font-weight: 700;
+            color: #d8b4fe;
+            backdrop-filter: blur(8px);
+            z-index: 2;
+        }
+
+        /* Панель зума (Пресеты + Ползунок) */
+        .zoom-controls-panel {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(168, 85, 247, 0.25);
+            border-radius: 16px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .zoom-presets {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .zoom-btn {
+            flex: 1;
+            padding: 6px 0;
+            font-size: 12px;
+            font-weight: 800;
+            font-family: monospace;
+            border-radius: 10px;
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            background: rgba(147, 51, 234, 0.15);
+            color: #d8b4fe;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .zoom-btn.active {
+            background: linear-gradient(135deg, #9333ea, #7c3aed);
+            color: #ffffff;
+            border-color: #c084fc;
+            box-shadow: 0 0 10px rgba(147, 51, 234, 0.6);
+        }
+
+        .zoom-slider-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .zoom-slider-row span {
+            font-size: 11px;
+            color: #a855f7;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .zoom-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 5px;
+            border-radius: 5px;
+            background: rgba(168, 85, 247, 0.3);
+            outline: none;
+        }
+
+        .zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #c084fc;
+            cursor: pointer;
+            box-shadow: 0 0 8px #9333ea;
+        }
+
+        /* Переключатель режимов */
         .mode-toggle-container {
             display: flex;
             width: 100%;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(168, 85, 247, 0.25);
             border-radius: 16px;
-            padding: 4px;
-            margin-bottom: 22px;
+            padding: 3px;
+            margin-bottom: 10px;
             gap: 4px;
         }
 
         .toggle-btn {
             flex: 1;
-            padding: 12px 10px;
-            font-size: 13.5px;
+            padding: 10px 8px;
+            font-size: 13px;
             font-weight: 700;
             border-radius: 12px;
             border: none;
@@ -260,90 +314,56 @@
             background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
             color: #ffffff;
             box-shadow: 0 4px 18px rgba(147, 51, 234, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.35);
-            transform: scale(1.02);
         }
 
-        .toggle-btn:active {
-            transform: scale(0.97);
-        }
-
-        /* Неоновая кнопка сканера */
-        .cyber-btn {
-            position: relative;
-            width: 100%;
-            padding: 16px 20px;
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            color: #ffffff;
-            background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.55), 0 0 22px rgba(168, 85, 247, 0.35);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .cyber-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-
-        .cyber-btn:active {
-            transform: scale(0.96);
-        }
-
-        .cyber-btn svg {
-            width: 22px;
-            height: 22px;
-            fill: #ffffff;
+        .status-msg {
+            font-size: 12px;
+            color: #d8b4fe;
+            opacity: 0.85;
+            min-height: 16px;
         }
     </style>
 </head>
 <body>
 
     <div class="ambient-glow-1"></div>
-    <div class="ambient-glow-2"></div>
 
     <div class="hud-card">
-        <div class="corner corner-tl"></div>
-        <div class="corner corner-tr"></div>
-        <div class="corner corner-bl"></div>
-        <div class="corner corner-br"></div>
-
         <div class="top-telemetry">
-            <div><span class="status-dot"></span>SYS_READY</div>
+            <div><span class="status-dot"></span>SYS_ACTIVE</div>
             <div id="target-display">TARGET: ALL</div>
         </div>
 
-        <!-- 3D Визуальный блок -->
-        <div class="hero-3d-wrapper">
-            <div class="ring-orb"></div>
-            <div class="hero-3d-cube">
-                <div class="laser-beam"></div>
-                <span class="emoji-3d">📸</span>
+        <!-- Видоискатель с прицелом -->
+        <div class="camera-viewport" id="viewport">
+            <video id="camera-video" playsinline muted autoplay></video>
+            <canvas id="camera-canvas"></canvas>
+
+            <div class="target-reticle" id="reticle">
+                <div class="corner corner-tl"></div>
+                <div class="corner corner-tr"></div>
+                <div class="corner corner-bl"></div>
+                <div class="corner corner-br"></div>
+                <div class="laser-line"></div>
             </div>
+
+            <div class="zoom-badge" id="zoom-badge">1.0x</div>
         </div>
 
-        <h1>Fast QR Scanner</h1>
-        <p class="subtitle">Параллельный залп по сокетам (&lt;0.1s)</p>
+        <!-- Панель управления зумом (Пинч / Пресеты / Слайдер) -->
+        <div class="zoom-controls-panel">
+            <div class="zoom-presets">
+                <button class="zoom-btn active" onclick="applyZoom(1.0)">1x</button>
+                <button class="zoom-btn" onclick="applyZoom(2.0)">2x</button>
+                <button class="zoom-btn" onclick="applyZoom(3.0)">3x</button>
+                <button class="zoom-btn" onclick="applyZoom(4.5)">4.5x</button>
+            </div>
+            <div class="zoom-slider-row">
+                <span>1x</span>
+                <input type="range" id="zoom-slider" class="zoom-slider" min="1.0" max="5.0" step="0.1" value="1.0">
+                <span>5x</span>
+            </div>
+        </div>
 
         <!-- Селектор: Все vs Моя группа -->
         <div class="mode-toggle-container">
@@ -355,13 +375,7 @@
             </button>
         </div>
 
-        <!-- Кнопка камеры -->
-        <button class="cyber-btn" onclick="startScanner()">
-            <svg viewBox="0 0 24 24">
-                <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
-            </svg>
-            <span>Включить сканер</span>
-        </button>
+        <div class="status-msg" id="status-msg">Наведите прицел на QR-код</div>
     </div>
 
     <script>
@@ -372,26 +386,40 @@
         }
 
         let currentMode = localStorage.getItem('qr_target_mode') || 'ALL';
+        let videoTrack = null;
+        let trackCapabilities = null;
+        let currentZoom = 1.0;
+        let isScanned = false;
+        let scanTimer = null;
 
-        // Синтезированный короткий аудио-бип при нажатии (0 КБ)
-        function playSciFiBeep() {
+        const videoEl = document.getElementById('camera-video');
+        const canvasEl = document.getElementById('camera-canvas');
+        const ctx = canvasEl.getContext('2d', { willReadFrequently: true });
+        const reticleEl = document.getElementById('reticle');
+        const zoomBadgeEl = document.getElementById('zoom-badge');
+        const zoomSlider = document.getElementById('zoom-slider');
+        const statusMsg = document.getElementById('status-msg');
+        const viewport = document.getElementById('viewport');
+
+        // Синтезированный аудио-бип при захвате цели
+        function playBeep(freq = 1200, duration = 0.08) {
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.12, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + duration);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
                 osc.connect(gain);
-                gain.connect(ctx.destination);
+                gain.connect(audioCtx.destination);
                 osc.start();
-                osc.stop(ctx.currentTime + 0.08);
+                osc.stop(audioCtx.currentTime + duration);
             } catch(e) {}
         }
 
-        function updateUI() {
+        function updateModeUI() {
             const display = document.getElementById('target-display');
             const btnAll = document.getElementById('btn-all');
             const btnMy = document.getElementById('btn-my');
@@ -410,44 +438,201 @@
         function selectMode(mode) {
             currentMode = mode;
             localStorage.setItem('qr_target_mode', mode);
-            playSciFiBeep();
+            playBeep(880, 0.05);
             if (tg?.HapticFeedback) {
                 tg.HapticFeedback.selectionChanged();
             }
-            updateUI();
+            updateModeUI();
         }
 
-        function startScanner() {
-            playSciFiBeep();
-            if (tg?.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
+        // ============ ИНИЦИАЛИЗАЦИЯ КАМЕРЫ И ЗУМА ============
+
+        async function initCamera() {
+            try {
+                const constraints = {
+                    audio: false,
+                    video: {
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                };
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                videoEl.srcObject = stream;
+                videoTrack = stream.getVideoTracks()[0];
+
+                if (videoTrack) {
+                    trackCapabilities = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
+                    if (trackCapabilities.zoom) {
+                        zoomSlider.min = trackCapabilities.zoom.min || 1.0;
+                        zoomSlider.max = Math.min(trackCapabilities.zoom.max || 5.0, 8.0);
+                        zoomSlider.step = trackCapabilities.zoom.step || 0.1;
+                    }
+                }
+
+                videoEl.onloadedmetadata = () => {
+                    videoEl.play();
+                    startScanningLoop();
+                };
+            } catch (err) {
+                statusMsg.innerText = "Ошибка доступа к камере";
+                console.error("Camera init error:", err);
+            }
+        }
+
+        async function applyZoom(val) {
+            val = Math.max(parseFloat(zoomSlider.min), Math.min(parseFloat(zoomSlider.max), val));
+            currentZoom = val;
+            zoomBadgeEl.innerText = `${val.toFixed(1)}x`;
+            zoomSlider.value = val;
+
+            // Обновляем активный класс на кнопках пресетов
+            document.querySelectorAll('.zoom-btn').forEach(btn => {
+                const btnVal = parseFloat(btn.innerText.replace('x', ''));
+                btn.classList.toggle('active', Math.abs(btnVal - val) < 0.25);
+            });
+
+            // 1. Аппаратный зум сенсора (Android / Новые устройства)
+            if (videoTrack && trackCapabilities?.zoom) {
+                try {
+                    await videoTrack.applyConstraints({
+                        advanced: [{ zoom: val }]
+                    });
+                    videoEl.style.transform = 'scale(1)';
+                    return;
+                } catch(e) {
+                    console.warn("Hardware zoom unsupported:", e);
+                }
             }
 
-            if (tg?.showScanQrPopup) {
-                const targetText = currentMode === 'ALL' ? 'всех аккаунтов' : 'моей группы';
-                tg.showScanQrPopup({ text: `⚡ Отметка для: ${targetText}` }, function(text) {
-                    if (text) {
-                        // Вибрация успеха при мгновенном считывании QR
-                        if (tg?.HapticFeedback) {
-                            tg.HapticFeedback.notificationOccurred('success');
-                        }
-                        
-                        const payload = JSON.stringify({
-                            url: text.trim(),
-                            group: currentMode
-                        });
-                        tg.sendData(payload);
-                        tg.close();
-                        return true;
-                    }
-                });
-            } else {
-                alert("Сканер запускается через мобильное приложение Telegram");
+            // 2. Высококачественный цифровой зум (iOS Safari / WebKit fallback)
+            videoEl.style.transform = `scale(${val})`;
+        }
+
+        // ============ ОБРАБОТЧИК ЖЕСТА ЩИПКА (PINCH-TO-ZOOM) ============
+
+        let startTouchDistance = 0;
+        let startZoomOnTouch = 1.0;
+
+        viewport.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                startTouchDistance = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+                startZoomOnTouch = currentZoom;
             }
+        }, { passive: true });
+
+        viewport.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && startTouchDistance > 0) {
+                const currentDist = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+                const factor = currentDist / startTouchDistance;
+                applyZoom(startZoomOnTouch * factor);
+            }
+        }, { passive: true });
+
+        zoomSlider.addEventListener('input', (e) => {
+            applyZoom(parseFloat(e.target.value));
+        });
+
+        // ============ ЦИКЛ РАСПОЗНАВАНИЯ И ФИКСАЦИИ ЦЕЛИ ============
+
+        async function startScanningLoop() {
+            let barcodeDetector = null;
+            if ('BarcodeDetector' in window) {
+                try {
+                    barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+                } catch(e) {}
+            }
+
+            const scanFrame = async () => {
+                if (isScanned || !videoEl.videoWidth) {
+                    if (!isScanned) requestAnimationFrame(scanFrame);
+                    return;
+                }
+
+                let detectedCode = null;
+
+                // Быстрый аппаратный BarcodeDetector
+                if (barcodeDetector) {
+                    try {
+                        const barcodes = await barcodeDetector.detect(videoEl);
+                        if (barcodes.length > 0) {
+                            detectedCode = barcodes[0].rawValue;
+                        }
+                    } catch(e) {}
+                }
+
+                // Фоллбэк через jsQR при цифровом зуме
+                if (!detectedCode) {
+                    canvasEl.width = videoEl.videoWidth;
+                    canvasEl.height = videoEl.videoHeight;
+                    ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+
+                    // Считывание центральной зоны с учетом зума
+                    const cropSize = Math.min(canvasEl.width, canvasEl.height) * 0.75;
+                    const cropX = (canvasEl.width - cropSize) / 2;
+                    const cropY = (canvasEl.height - cropSize) / 2;
+                    const imageData = ctx.getImageData(cropX, cropY, cropSize, cropSize);
+
+                    if (window.jsQR) {
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: "dontInvert"
+                        });
+                        if (code && code.data) {
+                            detectedCode = code.data;
+                        }
+                    }
+                }
+
+                if (detectedCode && !isScanned) {
+                    handleSuccessfulCapture(detectedCode);
+                    return;
+                }
+
+                requestAnimationFrame(scanFrame);
+            };
+
+            requestAnimationFrame(scanFrame);
+        }
+
+        function handleSuccessfulCapture(qrText) {
+            isScanned = true;
+
+            // Захват цели: смена цвета рамки на ярко-зеленый + виброотклик
+            reticleEl.classList.add('locked');
+            statusMsg.innerText = "⚡ QR-КОД ЗАХВАЧЕН!";
+            statusMsg.style.color = "#4ade80";
+
+            playBeep(1760, 0.12);
+
+            if (tg?.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+
+            const payload = JSON.stringify({
+                url: qrText.trim(),
+                group: currentMode
+            });
+
+            setTimeout(() => {
+                if (tg?.sendData) {
+                    tg.sendData(payload);
+                    tg.close();
+                } else {
+                    alert(`Отсканировано: ${qrText} [${currentMode}]`);
+                }
+            }, 250);
         }
 
         window.onload = () => {
-            updateUI();
+            updateModeUI();
+            initCamera();
         };
     </script>
 </body>
