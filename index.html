@@ -1,236 +1,396 @@
-!DOCTYPE html
-html lang=ru
-head
-    meta charset=UTF-8
-    meta name=viewport content=width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no
-    title⚡ QR Scanner Pulsetitle
-    !-- Telegram WebApp SDK --
-    script src=httpstelegram.orgjstelegram-web-app.jsscript
-    style
-         {
-            box-sizing border-box;
-            margin 0;
-            padding 0;
-            user-select none;
-            -webkit-user-select none;
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>⚡ PULSE CYBER SCANNER</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        :root {
+            --neon-purple: #c084fc;
+            --neon-violet: #9333ea;
+            --neon-magenta: #f43f5e;
+            --neon-cyan: #38bdf8;
+            --bg-dark: #070314;
         }
 
         body {
-            background radial-gradient(circle at 50% 20%, #2e1065 0%, #0f0728 60%, #070314 100%);
-            color #f3f4f6;
-            font-family -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-            min-height 100vh;
-            display flex;
-            align-items center;
-            justify-content center;
-            padding 20px;
-            overflow hidden;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(147, 51, 234, 0.35) 0%, transparent 60%),
+                radial-gradient(circle at 80% 90%, rgba(244, 63, 94, 0.15) 0%, transparent 50%),
+                linear-gradient(rgba(147, 51, 234, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(147, 51, 234, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Orbitron", monospace, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow: hidden;
+            position: relative;
         }
 
-         Фоновые неоновые сферы 
-        .glow-orb {
-            position absolute;
-            width 260px;
-            height 260px;
-            background radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(124, 58, 237, 0) 70%);
-            filter blur(40px);
-            z-index 0;
-            pointer-events none;
-            animation float 6s ease-in-out infinite alternate;
+        /* Фоновые неоновые туманности */
+        .ambient-glow {
+            position: absolute;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(124, 58, 237, 0) 70%);
+            filter: blur(60px);
+            z-index: 0;
+            pointer-events: none;
+            animation: pulse-glow 7s ease-in-out infinite alternate;
         }
 
-        @keyframes float {
-            0% { transform translate(-20px, -20px) scale(0.9); }
-            100% { transform translate(20px, 20px) scale(1.1); }
+        @keyframes pulse-glow {
+            0% { transform: scale(0.9) translate(-10px, -10px); opacity: 0.6; }
+            100% { transform: scale(1.15) translate(15px, 15px); opacity: 1; }
         }
 
-         Стеклянная карточка 
-        .glass-card {
-            position relative;
-            z-index 1;
-            width 100%;
-            max-width 360px;
-            background rgba(255, 255, 255, 0.04);
-            border 1px solid rgba(168, 85, 247, 0.25);
-            border-radius 28px;
-            padding 36px 24px;
-            backdrop-filter blur(24px);
-            -webkit-backdrop-filter blur(24px);
-            box-shadow 0 20px 50px rgba(0, 0, 0, 0.5),
-                        inset 0 1px 1px rgba(255, 255, 255, 0.2),
-                        0 0 30px rgba(139, 92, 246, 0.15);
-            display flex;
-            flex-direction column;
-            align-items center;
-            text-align center;
+        /* Главный голографический терминал */
+        .hud-card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 380px;
+            background: rgba(18, 10, 36, 0.65);
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            border-radius: 30px;
+            padding: 32px 24px;
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            box-shadow: 
+                0 25px 60px rgba(0, 0, 0, 0.8),
+                0 0 40px rgba(147, 51, 234, 0.25),
+                inset 0 1px 2px rgba(255, 255, 255, 0.3),
+                inset 0 0 20px rgba(168, 85, 247, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            overflow: hidden;
         }
 
-         Анимированная иконка сканера 
-        .scanner-visual {
-            position relative;
-            width 90px;
-            height 90px;
-            border-radius 22px;
-            background linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(79, 70, 229, 0.1) 100%);
-            border 1px solid rgba(192, 132, 252, 0.3);
-            display flex;
-            align-items center;
-            justify-content center;
-            margin-bottom 24px;
-            box-shadow 0 8px 24px rgba(126, 34, 206, 0.25);
+        /* Неоновые кибер-уголки терминала */
+        .corner {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-color: var(--neon-purple);
+            pointer-events: none;
+        }
+        .corner-tl { top: 12px; left: 12px; border-top: 2px solid; border-left: 2px solid; filter: drop-shadow(0 0 4px var(--neon-purple)); }
+        .corner-tr { top: 12px; right: 12px; border-top: 2px solid; border-right: 2px solid; filter: drop-shadow(0 0 4px var(--neon-purple)); }
+        .corner-bl { bottom: 12px; left: 12px; border-bottom: 2px solid; border-left: 2px solid; filter: drop-shadow(0 0 4px var(--neon-purple)); }
+        .corner-br { bottom: 12px; right: 12px; border-bottom: 2px solid; border-right: 2px solid; filter: drop-shadow(0 0 4px var(--neon-purple)); }
+
+        /* Верхняя плашка статуса */
+        .top-telemetry {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(216, 180, 254, 0.7);
+            font-family: monospace;
+            margin-bottom: 20px;
+            padding: 0 4px;
         }
 
-        .scanner-visual svg {
-            width 44px;
-            height 44px;
-            fill #c084fc;
-            filter drop-shadow(0 0 10px rgba(192, 132, 252, 0.6));
+        .status-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #22c55e;
+            margin-right: 6px;
+            animation: blink 1.2s infinite ease-in-out;
         }
 
-         Лазерная полоса сканера 
-        .laser-line {
-            position absolute;
-            width 80%;
-            height 2px;
-            background linear-gradient(90deg, transparent, #c084fc, #f472b6, transparent);
-            box-shadow 0 0 8px #c084fc;
-            animation scan 2.2s ease-in-out infinite alternate;
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
 
-        @keyframes scan {
-            0% { top 15%; opacity 0.3; }
-            100% { top 85%; opacity 1; }
+        /* Анимированный HUD-прицел сканера */
+        .hud-scanner {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 10px 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
+        /* Вращающиеся кольца */
+        .ring-outer {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1px dashed rgba(192, 132, 252, 0.4);
+            animation: rotate-cw 12s linear infinite;
+        }
+
+        .ring-inner {
+            position: absolute;
+            inset: 12px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: var(--neon-purple);
+            border-bottom-color: var(--neon-cyan);
+            filter: drop-shadow(0 0 8px var(--neon-purple));
+            animation: rotate-ccw 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes rotate-cw { 100% { transform: rotate(360deg); } }
+        @keyframes rotate-ccw { 100% { transform: rotate(-360deg); } }
+
+        .scanner-core {
+            position: relative;
+            width: 74px;
+            height: 74px;
+            background: rgba(147, 51, 234, 0.15);
+            border: 1px solid rgba(216, 180, 254, 0.4);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .scanner-core svg {
+            width: 36px;
+            height: 36px;
+            fill: #f3e8ff;
+            filter: drop-shadow(0 0 8px var(--neon-purple));
+        }
+
+        /* Горизонтальный лазерный луч */
+        .laser-beam {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ffffff, var(--neon-purple), var(--neon-magenta), transparent);
+            box-shadow: 0 0 10px var(--neon-purple), 0 0 20px var(--neon-magenta);
+            animation: laser-sweep 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes laser-sweep {
+            0% { top: 8%; opacity: 0.3; }
+            100% { top: 92%; opacity: 1; }
+        }
+
+        /* Текстовые заголовки */
         h1 {
-            font-size 22px;
-            font-weight 700;
-            letter-spacing -0.5px;
-            background linear-gradient(135deg, #ffffff 0%, #e9d5ff 100%);
-            -webkit-background-clip text;
-            -webkit-text-fill-color transparent;
-            margin-bottom 8px;
+            font-size: 23px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 50%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+            text-transform: uppercase;
         }
 
         p {
-            font-size 13.5px;
-            color #a855f7;
-            opacity 0.85;
-            line-height 1.4;
-            margin-bottom 32px;
+            font-size: 13px;
+            color: #d8b4fe;
+            opacity: 0.85;
+            line-height: 1.45;
+            margin-bottom: 26px;
+            padding: 0 10px;
         }
 
-         Неоновая кнопка 
-        .action-btn {
-            position relative;
-            width 100%;
-            padding 16px 20px;
-            font-size 16px;
-            font-weight 600;
-            color #ffffff;
-            background linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
-            border none;
-            border-radius 18px;
-            cursor pointer;
-            overflow hidden;
-            transition all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow 0 10px 25px rgba(124, 58, 237, 0.4),
-                        0 0 20px rgba(99, 102, 241, 0.25);
-            display flex;
-            align-items center;
-            justify-content center;
-            gap 10px;
+        /* Информационные плашки телеметрии */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 24px;
         }
 
-        .action-btnactive {
-            transform scale(0.97);
-            box-shadow 0 5px 15px rgba(124, 58, 237, 0.3);
+        .stat-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 14px;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
 
-        .action-btn svg {
-            width 20px;
-            height 20px;
-            fill #ffffff;
+        .stat-label {
+            font-size: 9.5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #a855f7;
+            font-family: monospace;
+            margin-bottom: 2px;
         }
 
-         Статус внизу 
-        .badge {
-            margin-top 20px;
-            display inline-flex;
-            align-items center;
-            gap 6px;
-            font-size 12px;
-            font-weight 500;
-            color #d8b4fe;
-            background rgba(168, 85, 247, 0.12);
-            padding 6px 14px;
-            border-radius 20px;
-            border 1px solid rgba(168, 85, 247, 0.2);
+        .stat-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: #f1f5f9;
         }
 
-        .badge-dot {
-            width 6px;
-            height 6px;
-            background #a855f7;
-            border-radius 50%;
-            box-shadow 0 0 8px #a855f7;
-            animation pulse 1.5s infinite;
+        /* Неоновая кнопка запуска */
+        .cyber-btn {
+            position: relative;
+            width: 100%;
+            padding: 17px 24px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #ffffff;
+            background: linear-gradient(135deg, #9333ea 0%, #7c3aed 50%, #4f46e5 100%);
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 
+                0 10px 30px rgba(124, 58, 237, 0.5),
+                0 0 20px rgba(168, 85, 247, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.4);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity 1; transform scale(1); }
-            50% { opacity 0.4; transform scale(0.8); }
+        .cyber-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 3s infinite;
         }
-    style
-head
-body
 
-    div class=glow-orbdiv
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
 
-    div class=glass-card
-        div class=scanner-visual
-            div class=laser-linediv
-            !-- Иконка QR --
-            svg viewBox=0 0 24 24
-                path d=M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h3v2h-3v-2zm-5 0h3v3h-3v-3zm2 5h4v2h-4v-2zm3-3h2v2h-2v-2zm-5 3h2v2h-2v-2z
-            svg
-        div
+        .cyber-btn:active {
+            transform: scale(0.96);
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+        }
 
-        h1Fast QR Scannerh1
-        pНаведите камеру на QR-код для моментальной отправки отметокp
+        .cyber-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: #ffffff;
+            filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+        }
+    </style>
+</head>
+<body>
 
-        button class=action-btn onclick=startScanner()
-            svg viewBox=0 0 24 24
-                path d=M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z
-            svg
-            spanВключить камеруspan
-        button
+    <div class="ambient-glow"></div>
 
-        div class=badge
-            div class=badge-dotdiv
-            spanUltra-Fast Pipeline (0.1s)span
-        div
-    div
+    <div class="hud-card">
+        <!-- Угловые элементы визора -->
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
 
-    script
+        <!-- Телеметрия -->
+        <div class="top-telemetry">
+            <div><span class="status-dot"></span>SYS_ONLINE</div>
+            <div>CORE: V2.4</div>
+        </div>
+
+        <!-- Прицел сканера -->
+        <div class="hud-scanner">
+            <div class="ring-outer"></div>
+            <div class="ring-inner"></div>
+            <div class="scanner-core">
+                <div class="laser-beam"></div>
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 3h6v6H3V3zm2 2v2h2V5H5zm8-2h6v6h-6V3zm2 2v2h2V5h-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm13-2h3v2h-3v-2zm-5 0h3v3h-3v-3zm2 5h4v2h-4v-2zm3-3h2v2h-2v-2zm-5 3h2v2h-2v-2z"/>
+                </svg>
+            </div>
+        </div>
+
+        <h1>Fast QR Scanner</h1>
+        <p>Наведите камеру на QR-код для параллельной отправки отметок</p>
+
+        <!-- Статистика -->
+        <div class="stats-grid">
+            <div class="stat-box">
+                <span class="stat-label">Latency</span>
+                <span class="stat-value" style="color: #38bdf8;">~0.05 sec</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Target</span>
+                <span class="stat-value" style="color: #c084fc;">MIREA PULSE</span>
+            </div>
+        </div>
+
+        <!-- Главная кнопка -->
+        <button class="cyber-btn" onclick="startScanner()">
+            <svg viewBox="0 0 24 24">
+                <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
+            </svg>
+            <span>Включить сканер</span>
+        </button>
+    </div>
+
+    <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
 
         function startScanner() {
-            tg.showScanQrPopup({ text Наведите камеру на QR-код пары }, function(text) {
-                if (text) {
-                    tg.sendData(text.trim());
-                    tg.close();
-                    return true;
-                }
-            });
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+
+            if (tg.showScanQrPopup) {
+                tg.showScanQrPopup({ text: "⚡ Наведите камеру на QR-код пары" }, function(text) {
+                    if (text) {
+                        if (tg.HapticFeedback) {
+                            tg.HapticFeedback.notificationOccurred('success');
+                        }
+                        tg.sendData(text.trim());
+                        tg.close();
+                        return true;
+                    }
+                });
+            } else {
+                alert("Сканер запускается через мобильный клиент Telegram");
+            }
         }
 
-         Авто-запуск сканера сразу при входе в WebApp
-        window.onload = () = {
-            setTimeout(startScanner, 200);
+        // Автозапуск сканера при открытии
+        window.onload = () => {
+            setTimeout(startScanner, 250);
         };
-    script
-body
-html
+    </script>
+</body>
+</html>
