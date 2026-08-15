@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>⚡ PULSE CYBER SCANNER</title>
+    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -20,7 +21,6 @@
             --neon-pink: #f43f5e;
             --neon-cyan: #38bdf8;
             --bg-dark: #060212;
-            --card-bg: rgba(18, 10, 36, 0.85);
         }
 
         body {
@@ -35,52 +35,64 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif;
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            padding: 16px 16px 85px 16px;
-            overflow-x: hidden;
+            justify-content: center;
+            padding: 16px;
+            overflow: hidden;
             position: relative;
         }
 
+        /* Неоновые светящиеся сферы */
         .ambient-glow-1 {
-            position: fixed;
+            position: absolute;
             width: 320px;
             height: 320px;
-            background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(124, 58, 237, 0) 70%);
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.5) 0%, rgba(124, 58, 237, 0) 70%);
             filter: blur(65px);
             z-index: 0;
             pointer-events: none;
+            animation: pulse-glow 6s ease-in-out infinite alternate;
         }
 
         .ambient-glow-2 {
-            position: fixed;
+            position: absolute;
             bottom: -50px;
             width: 280px;
             height: 280px;
-            background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, rgba(147, 51, 234, 0) 70%);
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, rgba(147, 51, 234, 0) 70%);
             filter: blur(55px);
             z-index: 0;
             pointer-events: none;
         }
 
+        @keyframes pulse-glow {
+            0% { transform: scale(0.9) translate(-10px, -10px); opacity: 0.7; }
+            100% { transform: scale(1.15) translate(15px, 15px); opacity: 1; }
+        }
+
+        /* Главная голографическая карточка */
         .hud-card {
             position: relative;
             z-index: 1;
             width: 100%;
-            max-width: 380px;
-            background: var(--card-bg);
-            border: 1px solid rgba(192, 132, 252, 0.35);
-            border-radius: 28px;
-            padding: 24px 20px;
+            max-width: 360px;
+            background: rgba(18, 10, 36, 0.75);
+            border: 1px solid rgba(192, 132, 252, 0.4);
+            border-radius: 32px;
+            padding: 28px 22px;
             backdrop-filter: blur(35px);
-            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 0 0 45px rgba(147, 51, 234, 0.3);
+            -webkit-backdrop-filter: blur(35px);
+            box-shadow: 
+                0 30px 70px rgba(0, 0, 0, 0.9),
+                0 0 45px rgba(147, 51, 234, 0.35),
+                inset 0 1px 2px rgba(255, 255, 255, 0.35);
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
         }
 
+        /* Угловые прицелы */
         .corner {
             position: absolute;
             width: 14px;
@@ -88,10 +100,10 @@
             border-color: var(--neon-purple);
             pointer-events: none;
         }
-        .corner-tl { top: 12px; left: 12px; border-top: 2px solid; border-left: 2px solid; }
-        .corner-tr { top: 12px; right: 12px; border-top: 2px solid; border-right: 2px solid; }
-        .corner-bl { bottom: 12px; left: 12px; border-bottom: 2px solid; border-left: 2px solid; }
-        .corner-br { bottom: 12px; right: 12px; border-bottom: 2px solid; border-right: 2px solid; }
+        .corner-tl { top: 12px; left: 12px; border-top: 2px solid; border-left: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
+        .corner-tr { top: 12px; right: 12px; border-top: 2px solid; border-right: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
+        .corner-bl { bottom: 12px; left: 12px; border-bottom: 2px solid; border-left: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
+        .corner-br { bottom: 12px; right: 12px; border-bottom: 2px solid; border-right: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
 
         .top-telemetry {
             display: flex;
@@ -114,60 +126,108 @@
             border-radius: 50%;
             box-shadow: 0 0 10px #22c55e;
             margin-right: 6px;
+            animation: blink 1.2s infinite ease-in-out;
         }
 
-        .tab-content {
-            display: none;
-            width: 100%;
-            flex-direction: column;
-            align-items: center;
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
 
-        .tab-content.active {
-            display: flex;
-        }
-
+        /* 3D-Элемент сканера */
         .hero-3d-wrapper {
             position: relative;
-            width: 90px;
-            height: 90px;
-            margin: 4px 0 12px;
+            width: 110px;
+            height: 110px;
+            margin: 6px 0 16px;
             display: flex;
             align-items: center;
             justify-content: center;
+            perspective: 600px;
         }
 
         .hero-3d-cube {
             position: relative;
-            width: 70px;
-            height: 70px;
-            border-radius: 20px;
+            width: 82px;
+            height: 82px;
+            border-radius: 24px;
             background: linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(99, 102, 241, 0.15) 100%);
             border: 1px solid rgba(216, 180, 254, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 34px;
-            box-shadow: 0 15px 35px rgba(124, 58, 237, 0.45);
+            font-size: 42px;
+            box-shadow: 
+                0 15px 35px rgba(124, 58, 237, 0.45),
+                inset 0 0 20px rgba(192, 132, 252, 0.3);
+            animation: float-3d 4s ease-in-out infinite alternate;
+            transform-style: preserve-3d;
+        }
+
+        .hero-3d-cube .emoji-3d {
+            display: inline-block;
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6)) drop-shadow(0 0 14px rgba(192, 132, 252, 0.8));
+            animation: pulse-emoji 2.5s ease-in-out infinite alternate;
+        }
+
+        /* Вращающееся неоновое кольцо вокруг 3D-иконки */
+        .ring-orb {
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            border: 2px dashed rgba(56, 189, 248, 0.5);
+            animation: rotate-ring 10s linear infinite;
+        }
+
+        @keyframes float-3d {
+            0% { transform: translateY(-4px) rotateX(10deg) rotateY(-8deg); }
+            100% { transform: translateY(6px) rotateX(-8deg) rotateY(10deg); }
+        }
+
+        @keyframes pulse-emoji {
+            0% { transform: scale(0.95); }
+            100% { transform: scale(1.08); }
+        }
+
+        @keyframes rotate-ring {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Лазерный луч сканера */
+        .laser-beam {
+            position: absolute;
+            left: 5%;
+            width: 90%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ffffff, var(--neon-purple), var(--neon-pink), transparent);
+            box-shadow: 0 0 12px var(--neon-purple), 0 0 20px var(--neon-pink);
+            animation: laser-sweep 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes laser-sweep {
+            0% { top: 12%; opacity: 0.3; }
+            100% { top: 88%; opacity: 1; }
         }
 
         h1 {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 800;
+            letter-spacing: -0.5px;
             background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 50%, #c084fc 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             text-transform: uppercase;
         }
 
         .subtitle {
-            font-size: 11.5px;
+            font-size: 12.5px;
             color: #d8b4fe;
             opacity: 0.85;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
+        /* Переключатель: Все vs Моя группа */
         .mode-toggle-container {
             display: flex;
             width: 100%;
@@ -175,20 +235,21 @@
             border: 1px solid rgba(168, 85, 247, 0.25);
             border-radius: 16px;
             padding: 4px;
-            margin-bottom: 16px;
+            margin-bottom: 22px;
             gap: 4px;
         }
 
         .toggle-btn {
             flex: 1;
-            padding: 10px 8px;
-            font-size: 12.5px;
+            padding: 12px 10px;
+            font-size: 13.5px;
             font-weight: 700;
             border-radius: 12px;
             border: none;
             background: transparent;
             color: #d8b4fe;
             cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -198,134 +259,61 @@
         .toggle-btn.active {
             background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
             color: #ffffff;
-            box-shadow: 0 4px 18px rgba(147, 51, 234, 0.5);
+            box-shadow: 0 4px 18px rgba(147, 51, 234, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+            transform: scale(1.02);
         }
 
+        .toggle-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Неоновая кнопка сканера */
         .cyber-btn {
             position: relative;
             width: 100%;
-            padding: 14px 18px;
-            font-size: 14px;
+            padding: 16px 20px;
+            font-size: 16px;
             font-weight: 700;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
             color: #ffffff;
             background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
             border: none;
-            border-radius: 16px;
+            border-radius: 20px;
             cursor: pointer;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.55);
+            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.55), 0 0 22px rgba(168, 85, 247, 0.35);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .cyber-input-group {
+        .cyber-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
             width: 100%;
-            margin-bottom: 10px;
-            text-align: left;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+            animation: shimmer 3s infinite;
         }
 
-        .cyber-label {
-            font-size: 10.5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #d8b4fe;
-            margin-bottom: 3px;
-            display: block;
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
         }
 
-        .cyber-input {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 12px;
-            padding: 10px 12px;
-            font-size: 13.5px;
-            color: #ffffff;
-            outline: none;
+        .cyber-btn:active {
+            transform: scale(0.96);
         }
 
-        .acc-list {
-            width: 100%;
-            max-height: 220px;
-            overflow-y: auto;
-            margin-top: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .acc-item {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(168, 85, 247, 0.2);
-            border-radius: 12px;
-            padding: 8px 10px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            text-align: left;
-        }
-
-        .acc-info-email {
-            font-size: 12px;
-            font-weight: 600;
-            color: #ffffff;
-            word-break: break-all;
-        }
-
-        .acc-info-sub {
-            font-size: 10px;
-            color: #d8b4fe;
-            opacity: 0.8;
-        }
-
-        .btn-del {
-            background: rgba(244, 63, 94, 0.18);
-            border: 1px solid rgba(244, 63, 94, 0.4);
-            color: #fda4af;
-            border-radius: 8px;
-            padding: 5px 8px;
-            font-size: 11px;
-            cursor: pointer;
-        }
-
-        .bottom-nav {
-            position: fixed;
-            bottom: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 32px);
-            max-width: 380px;
-            background: rgba(18, 10, 36, 0.9);
-            border: 1px solid rgba(192, 132, 252, 0.35);
-            border-radius: 22px;
-            padding: 6px;
-            backdrop-filter: blur(25px);
-            display: flex;
-            justify-content: space-around;
-            z-index: 100;
-        }
-
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 8px 4px;
-            border-radius: 16px;
-            cursor: pointer;
-            color: #d8b4fe;
-            font-size: 11px;
-            font-weight: 600;
-            gap: 3px;
-        }
-
-        .nav-item.active {
-            color: #ffffff;
-            background: linear-gradient(135deg, rgba(147, 51, 234, 0.4) 0%, rgba(99, 102, 241, 0.25) 100%);
-            border: 1px solid rgba(192, 132, 252, 0.3);
+        .cyber-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: #ffffff;
         }
     </style>
 </head>
@@ -345,79 +333,35 @@
             <div id="target-display">TARGET: ALL</div>
         </div>
 
-        <!-- ВКЛАДКА 1: СКАНЕР -->
-        <div class="tab-content active" id="tab-scan">
-            <div class="hero-3d-wrapper">
-                <div class="hero-3d-cube"><span>📸</span></div>
+        <!-- 3D Визуальный блок -->
+        <div class="hero-3d-wrapper">
+            <div class="ring-orb"></div>
+            <div class="hero-3d-cube">
+                <div class="laser-beam"></div>
+                <span class="emoji-3d">📸</span>
             </div>
-            <h1>Fast QR Scanner</h1>
-            <p class="subtitle">Параллельный залп по сокетам (&lt;0.1s)</p>
+        </div>
 
-            <div class="mode-toggle-container">
-                <button class="toggle-btn active" id="btn-all" onclick="selectTargetMode('ALL')">⚡ Все</button>
-                <button class="toggle-btn" id="btn-my" onclick="selectTargetMode('MY_GROUP')">👥 Моя группа</button>
-            </div>
+        <h1>Fast QR Scanner</h1>
+        <p class="subtitle">Параллельный залп по сокетам (&lt;0.1s)</p>
 
-            <button class="cyber-btn" onclick="startScanner()">
-                <span>⚡ Сканировать QR</span>
+        <!-- Селектор: Все vs Моя группа -->
+        <div class="mode-toggle-container">
+            <button class="toggle-btn active" id="btn-all" onclick="selectMode('ALL')">
+                ⚡ Все
+            </button>
+            <button class="toggle-btn" id="btn-my" onclick="selectMode('MY_GROUP')">
+                👥 Моя группа
             </button>
         </div>
 
-        <!-- ВКЛАДКА 2: УПРАВЛЕНИЕ -->
-        <div class="tab-content" id="tab-manage">
-            <h1 style="margin-top: 4px;">Управление</h1>
-            <p class="subtitle">Добавление и ваши аккаунты</p>
-
-            <div id="add-account-form" style="width: 100%;">
-                <div class="cyber-input-group">
-                    <label class="cyber-label">Почта (edu.mirea.ru)</label>
-                    <input type="email" id="input-email" class="cyber-input" placeholder="ivanov.i@edu.mirea.ru">
-                </div>
-                <div class="cyber-input-group">
-                    <label class="cyber-label">Пароль</label>
-                    <input type="password" id="input-pass" class="cyber-input" placeholder="••••••••••••">
-                </div>
-                <button class="cyber-btn" style="margin-bottom: 10px;" onclick="submitNewAccount()">
-                    <span>🔑 Войти аккаунт</span>
-                </button>
-            </div>
-
-            <div id="code-verify-form" style="width: 100%; display: none;">
-                <div class="cyber-input-group">
-                    <label class="cyber-label" style="color: #38bdf8;">✉️ Введите код из письма</label>
-                    <input type="text" id="input-code" class="cyber-input" placeholder="6-значный код">
-                </div>
-                <button class="cyber-btn" style="background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%); margin-bottom: 10px;" onclick="submitAuthCode()">
-                    <span>✅ Подтвердить код</span>
-                </button>
-            </div>
-
-            <div class="top-telemetry" style="margin-top: 4px; margin-bottom: 2px;">
-                <div>МОИ АККАУНТЫ</div>
-                <div id="my-acc-count">0 шт.</div>
-            </div>
-
-            <div class="acc-list" id="my-accounts-list"></div>
-        </div>
-
-        <!-- ВКЛАДКА 3: ВСЕ АККАУНТЫ -->
-        <div class="tab-content" id="tab-all-accs">
-            <h1 style="margin-top: 4px;">Все аккаунты</h1>
-            <p class="subtitle">База данных системы</p>
-
-            <div class="top-telemetry" style="margin-bottom: 2px;">
-                <div>ВСЕГО В СИСТЕМЕ</div>
-                <div id="all-acc-count">0 шт.</div>
-            </div>
-
-            <div class="acc-list" id="all-accounts-list"></div>
-        </div>
-    </div>
-
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchTab('tab-scan', this)"><span style="font-size:16px">⚡</span><span>Сканер</span></div>
-        <div class="nav-item" onclick="switchTab('tab-manage', this)"><span style="font-size:16px">➕</span><span>Управление</span></div>
-        <div class="nav-item" onclick="switchTab('tab-all-accs', this)"><span style="font-size:16px">👥</span><span>Все аккаунты</span></div>
+        <!-- Кнопка камеры -->
+        <button class="cyber-btn" onclick="startScanner()">
+            <svg viewBox="0 0 24 24">
+                <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
+            </svg>
+            <span>Включить сканер</span>
+        </button>
     </div>
 
     <script>
@@ -427,10 +371,9 @@
             tg.expand();
         }
 
-        const ADMIN_ID = 1828262091;
-        const currentUserId = tg?.initDataUnsafe?.user?.id || ADMIN_ID;
-        let currentTargetMode = localStorage.getItem('qr_target_mode') || 'ALL';
+        let currentMode = localStorage.getItem('qr_target_mode') || 'ALL';
 
+        // Синтезированный короткий аудио-бип при нажатии (0 КБ)
         function playSciFiBeep() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -448,28 +391,12 @@
             } catch(e) {}
         }
 
-        function switchTab(tabId, el) {
-            playSciFiBeep();
-            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            el.classList.add('active');
-        }
-
-        function selectTargetMode(mode) {
-            currentTargetMode = mode;
-            localStorage.setItem('qr_target_mode', mode);
-            playSciFiBeep();
-            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
-            updateTargetUI();
-        }
-
-        function updateTargetUI() {
+        function updateUI() {
             const display = document.getElementById('target-display');
             const btnAll = document.getElementById('btn-all');
             const btnMy = document.getElementById('btn-my');
-            if (currentTargetMode === 'MY_GROUP') {
+
+            if (currentMode === 'MY_GROUP') {
                 display.innerText = 'TARGET: MY GROUP';
                 btnAll.classList.remove('active');
                 btnMy.classList.add('active');
@@ -480,83 +407,47 @@
             }
         }
 
+        function selectMode(mode) {
+            currentMode = mode;
+            localStorage.setItem('qr_target_mode', mode);
+            playSciFiBeep();
+            if (tg?.HapticFeedback) {
+                tg.HapticFeedback.selectionChanged();
+            }
+            updateUI();
+        }
+
         function startScanner() {
             playSciFiBeep();
-            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            if (tg?.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+
             if (tg?.showScanQrPopup) {
-                tg.showScanQrPopup({ text: `⚡ Сканирование QR` }, function(text) {
+                const targetText = currentMode === 'ALL' ? 'всех аккаунтов' : 'моей группы';
+                tg.showScanQrPopup({ text: `⚡ Отметка для: ${targetText}` }, function(text) {
                     if (text) {
-                        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                        tg.sendData(JSON.stringify({ action: "scan_qr", url: text.trim(), group: currentTargetMode }));
+                        // Вибрация успеха при мгновенном считывании QR
+                        if (tg?.HapticFeedback) {
+                            tg.HapticFeedback.notificationOccurred('success');
+                        }
+                        
+                        const payload = JSON.stringify({
+                            url: text.trim(),
+                            group: currentMode
+                        });
+                        tg.sendData(payload);
                         tg.close();
                         return true;
                     }
                 });
             } else {
-                alert("Сканер доступен через мобильное приложение Telegram");
+                alert("Сканер запускается через мобильное приложение Telegram");
             }
-        }
-
-        function submitNewAccount() {
-            const email = document.getElementById('input-email').value.trim();
-            const pass = document.getElementById('input-pass').value.trim();
-            if (!email || !pass) { alert("Заполните почту и пароль!"); return; }
-
-            playSciFiBeep();
-            if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-            tg.sendData(JSON.stringify({ action: "start_login", email: email, password: pass }));
-        }
-
-        function submitAuthCode() {
-            const code = document.getElementById('input-code').value.trim();
-            if (!code) { alert("Введите код из письма!"); return; }
-            tg.sendData(JSON.stringify({ action: "submit_code", code: code }));
-        }
-
-        function deleteAccount(email) {
-            if (!confirm(`Удалить аккаунт ${email}?`)) return;
-            tg.sendData(JSON.stringify({ action: "delete_account", email: email }));
-        }
-
-        function renderAccounts(accountsData) {
-            const myContainer = document.getElementById('my-accounts-list');
-            const allContainer = document.getElementById('all-accounts-list');
-            myContainer.innerHTML = '';
-            allContainer.innerHTML = '';
-
-            let myCount = 0;
-            let allCount = 0;
-
-            for (const [email, data] of Object.entries(accountsData)) {
-                allCount++;
-                const ownerId = data.owner_id || ADMIN_ID;
-                const group = data.group || 'Общая';
-
-                const allItem = document.createElement('div');
-                allItem.className = 'acc-item';
-                allItem.innerHTML = `<div><div class="acc-info-email">${email}</div><div class="acc-info-sub">Группа: ${group}</div></div>`;
-                allContainer.appendChild(allItem);
-
-                if (ownerId === currentUserId || currentUserId === ADMIN_ID) {
-                    myCount++;
-                    const myItem = document.createElement('div');
-                    myItem.className = 'acc-item';
-                    myItem.innerHTML = `<div><div class="acc-info-email">${email}</div><div class="acc-info-sub">[${group}]</div></div><button class="btn-del" onclick="deleteAccount('${email}')">Удалить</button>`;
-                    myContainer.appendChild(myItem);
-                }
-            }
-
-            document.getElementById('my-acc-count').innerText = `${myCount} шт.`;
-            document.getElementById('all-acc-count').innerText = `${allCount} шт.`;
         }
 
         window.onload = () => {
-            updateTargetUI();
-            if (tg) {
-                try {
-                    tg.sendData(JSON.stringify({ action: "get_accounts" }));
-                } catch(e) {}
-            }
+            updateUI();
         };
     </script>
 </body>
