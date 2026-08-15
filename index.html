@@ -42,10 +42,10 @@
             justify-content: center;
             padding: 16px;
             position: relative;
-            perspective: 1000px;
+            perspective: 1100px;
         }
 
-        /* 60 FPS Кибер-канвас (Сетка + Частицы) */
+        /* 60 FPS Фоновый Canvas (Сетка + Частицы) */
         #cyber-canvas {
             position: fixed;
             top: 0;
@@ -56,16 +56,16 @@
             pointer-events: none;
         }
 
-        /* Фоновые туманности */
+        /* Неоновые светящиеся сферы */
         .ambient-glow-1 {
             position: absolute;
             width: 320px;
             height: 320px;
-            background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(124, 58, 237, 0) 70%);
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.45) 0%, rgba(124, 58, 237, 0) 70%);
             filter: blur(65px);
             z-index: 0;
             pointer-events: none;
-            animation: pulse-glow 6s ease-in-out infinite alternate;
+            animation: pulse-glow 5s ease-in-out infinite alternate;
         }
 
         .ambient-glow-2 {
@@ -81,10 +81,10 @@
 
         @keyframes pulse-glow {
             0% { transform: scale(0.9) translate(-10px, -10px); opacity: 0.5; }
-            100% { transform: scale(1.15) translate(15px, 15px); opacity: 0.9; }
+            100% { transform: scale(1.15) translate(15px, 15px); opacity: 0.85; }
         }
 
-        /* Обертка для 3D трансформации */
+        /* 3D Сцена */
         .hud-scene {
             width: 100%;
             max-width: 350px;
@@ -115,7 +115,7 @@
             overflow: hidden;
         }
 
-        /* Спекулярный динамический световой блик */
+        /* Динамический световой блик */
         .card-specular-glare {
             position: absolute;
             inset: 0;
@@ -170,7 +170,7 @@
             50% { opacity: 0.3; }
         }
 
-        /* ============ 3D ГОЛОГРАФИЧЕСКИЙ РИГ КАМЕРЫ ============ */
+        /* ============ 3D ОБЪЕМНЫЙ РИГ ФОТОАППАРАТА ============ */
         .camera-3d-rig {
             position: relative;
             width: 120px;
@@ -180,7 +180,8 @@
             align-items: center;
             justify-content: center;
             transform-style: preserve-3d;
-            perspective: 600px;
+            perspective: 800px;
+            will-change: transform;
         }
 
         .rig-ring-outer {
@@ -188,10 +189,10 @@
             width: 116px;
             height: 116px;
             border-radius: 50%;
-            border: 2px dashed rgba(56, 189, 248, 0.45);
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+            border: 2px dashed rgba(56, 189, 248, 0.5);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
             transform: translateZ(10px);
-            animation: ring-spin 12s linear infinite;
+            animation: ring-spin 10s linear infinite;
         }
 
         .rig-ring-inner {
@@ -199,9 +200,9 @@
             width: 98px;
             height: 98px;
             border-radius: 50%;
-            border: 1.5px solid rgba(244, 63, 94, 0.35);
+            border: 1.5px solid rgba(244, 63, 94, 0.45);
             transform: translateZ(22px);
-            animation: ring-spin-reverse 8s linear infinite;
+            animation: ring-spin-reverse 7s linear infinite;
         }
 
         @keyframes ring-spin { 100% { transform: translateZ(10px) rotate(360deg); } }
@@ -244,7 +245,7 @@
             transform: translateZ(55px);
             filter: drop-shadow(0 10px 18px rgba(0,0,0,0.8)) drop-shadow(0 0 14px rgba(192, 132, 252, 0.9));
             display: inline-block;
-            animation: pulse-icon 3s ease-in-out infinite alternate;
+            animation: pulse-icon 2.5s ease-in-out infinite alternate;
         }
 
         @keyframes pulse-icon {
@@ -430,7 +431,7 @@
                 </button>
             </div>
 
-            <!-- Кнопка камеры -->
+            <!-- Кнопка камеры (Нативный Telegram QR Popup) -->
             <button class="cyber-btn" onclick="startScanner()">
                 <svg viewBox="0 0 24 24">
                     <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
@@ -445,7 +446,6 @@
         if (tg) {
             tg.ready();
             tg.expand();
-            // Блокировка закрытия шторки свайпом вниз
             if (tg.disableVerticalSwipes) {
                 tg.disableVerticalSwipes();
             }
@@ -524,7 +524,7 @@
             }
         }
 
-        // ============ ЛЕГКОВЕСНЫЙ КИБЕР-ФОН (GRID & PARTICLES) ============
+        // ============ КИБЕР-ФОН (СЕТКА + ЧАСТИЦЫ) ============
         const canvas = document.getElementById('cyber-canvas');
         const ctx = canvas.getContext('2d');
         let width, height;
@@ -555,7 +555,6 @@
         function drawBackground() {
             ctx.clearRect(0, 0, width, height);
 
-            // Анимированная кибер-сетка
             gridOffset = (gridOffset + 0.3) % 40;
             ctx.strokeStyle = 'rgba(147, 51, 234, 0.07)';
             ctx.lineWidth = 1;
@@ -571,7 +570,6 @@
             }
             ctx.stroke();
 
-            // Парящие частицы
             for (let i = 0; i < particles.length; i++) {
                 const p = particles[i];
                 p.y -= p.speedY;
@@ -597,101 +595,54 @@
         resizeCanvas();
         requestAnimationFrame(drawBackground);
 
-        // ============ 3D PARALLAX ЧЕРЕЗ ГИРОСКОП ТЕЛЕФОНА ============
+        // ============ МГНОВЕННЫЙ 3D-ДВИЖОК С ПАССИВНЫМ ГИРОСКОПОМ ============
         const hudScene = document.getElementById('hud-scene');
         const cameraRig = document.getElementById('camera-rig');
         const glare = document.getElementById('specular-glare');
 
-        let targetRotX = 0;
-        let targetRotY = 0;
-        let curRotX = 0;
-        let curRotY = 0;
+        let gyroX = 0;
+        let gyroY = 0;
 
-        let targetCamX = 0;
-        let targetCamY = 0;
-        let curCamX = 0;
-        let curCamY = 0;
-
-        // Плавная физика интерполяции (Lerp)
-        function renderParallax() {
-            curRotX += (targetRotX - curRotX) * 0.08;
-            curRotY += (targetRotY - curRotY) * 0.08;
-            curCamX += (targetCamX - curCamX) * 0.1;
-            curCamY += (targetCamY - curCamY) * 0.1;
-
-            hudScene.style.transform = `rotateX(${curRotX.toFixed(2)}deg) rotateY(${curRotY.toFixed(2)}deg)`;
-            cameraRig.style.transform = `rotateX(${(-curCamX * 1.8).toFixed(2)}deg) rotateY(${(-curCamY * 1.8).toFixed(2)}deg)`;
-
-            const glareX = 50 + curRotY * 2.2;
-            const glareY = 50 - curRotX * 2.2;
-            glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.26) 0%, rgba(192, 132, 252, 0.06) 45%, transparent 75%)`;
-
-            requestAnimationFrame(renderParallax);
-        }
-        requestAnimationFrame(renderParallax);
-
-        // Обработка наклона устройства (iOS + Android)
-        let baseBeta = null;
-        let baseGamma = null;
-
-        function handleOrientation(e) {
-            if (e.beta === null || e.gamma === null) return;
-
-            // Естественный хват смартфона (около 45° к горизонту)
-            if (baseBeta === null) {
-                baseBeta = 45;
-                baseGamma = 0;
+        // Пассивный сбор данных наклона без системных запросов разрешений
+        window.addEventListener('deviceorientation', (e) => {
+            if (e.beta !== null && e.gamma !== null) {
+                const deltaBeta = Math.max(-30, Math.min(30, e.beta - 45));
+                const deltaGamma = Math.max(-30, Math.min(30, e.gamma));
+                gyroX = -deltaBeta * 0.35;
+                gyroY = deltaGamma * 0.45;
             }
-
-            let deltaBeta = e.beta - baseBeta;    // Тангаж (вперед/назад)
-            let deltaGamma = e.gamma - baseGamma; // Крен (влево/вправо)
-
-            deltaBeta = Math.max(-30, Math.min(30, deltaBeta));
-            deltaGamma = Math.max(-30, Math.min(30, deltaGamma));
-
-            targetRotX = -deltaBeta * 0.55;
-            targetRotY = deltaGamma * 0.65;
-
-            targetCamX = targetRotX;
-            targetCamY = targetRotY;
-        }
-
-        // Запрос разрешения на гироскоп для iOS 13+
-        async function enableGyro() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const res = await DeviceOrientationEvent.requestPermission();
-                    if (res === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation, true);
-                    }
-                } catch(e) {}
-            } else if (window.DeviceOrientationEvent) {
-                window.addEventListener('deviceorientation', handleOrientation, true);
-            }
-        }
-
-        // Подключаем гироскоп при первом тапе
-        window.addEventListener('touchstart', enableGyro, { once: true, passive: true });
-        window.addEventListener('click', enableGyro, { once: true });
-
-        // Курсор мыши ТОЛЬКО для десктопа (сенсорные тапы игнорируются)
-        window.addEventListener('pointermove', (e) => {
-            if (e.pointerType !== 'mouse') return;
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-            const normX = (e.clientX - centerX) / centerX;
-            const normY = (e.clientY - centerY) / centerY;
-
-            targetRotY = normX * 14;
-            targetRotX = -normY * 14;
-
-            targetCamY = targetRotY;
-            targetCamX = targetRotX;
         }, { passive: true });
+
+        // Автономное 3D вращение + наложение наклона
+        function animate3DScene(now) {
+            const t = now * 0.001;
+
+            // Базовое парение + наклон
+            const cardRotX = Math.sin(t * 1.1) * 5.0 + gyroX;
+            const cardRotY = Math.cos(t * 0.85) * 6.5 + gyroY;
+            const cardFloatY = Math.sin(t * 1.4) * 5.0;
+
+            hudScene.style.transform = `translateY(${cardFloatY.toFixed(2)}px) rotateX(${cardRotX.toFixed(2)}deg) rotateY(${cardRotY.toFixed(2)}deg)`;
+
+            // 3D-риг фотоаппарата
+            const camRotX = Math.sin(t * 1.6) * 12.0 - gyroX * 0.5;
+            const camRotY = Math.sin(t * 1.0) * 20.0 + gyroY * 0.5;
+            const camRollZ = Math.cos(t * 0.7) * 6.0;
+
+            cameraRig.style.transform = `rotateX(${camRotX.toFixed(2)}deg) rotateY(${camRotY.toFixed(2)}deg) rotateZ(${camRollZ.toFixed(2)}deg)`;
+
+            // Световой блик
+            const glareX = 50 + Math.cos(t * 0.85) * 28.0 + gyroY * 1.5;
+            const glareY = 50 - Math.sin(t * 1.1) * 28.0 - gyroX * 1.5;
+            glare.style.background = `radial-gradient(circle at ${glareX.toFixed(1)}% ${glareY.toFixed(1)}%, rgba(255, 255, 255, 0.28) 0%, rgba(192, 132, 252, 0.06) 45%, transparent 75%)`;
+
+            requestAnimationFrame(animate3DScene);
+        }
+
+        requestAnimationFrame(animate3DScene);
 
         window.onload = () => {
             updateUI();
-            enableGyro();
         };
     </script>
 </body>
