@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>⚡ PULSE CYBER SCANNER</title>
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -13,6 +13,7 @@
             padding: 0;
             user-select: none;
             -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
 
         :root {
@@ -24,18 +25,24 @@
             --bg-dark: #060212;
         }
 
-        body {
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+            touch-action: none;
             background-color: var(--bg-dark);
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif;
-            min-height: 100vh;
+        }
+
+        body {
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 16px;
-            overflow: hidden;
             position: relative;
-            perspective: 1200px;
+            perspective: 1000px;
         }
 
         /* 60 FPS Кибер-канвас (Сетка + Частицы) */
@@ -49,13 +56,13 @@
             pointer-events: none;
         }
 
-        /* Фоновые радиальные туманности */
+        /* Фоновые туманности */
         .ambient-glow-1 {
             position: absolute;
-            width: 340px;
-            height: 340px;
-            background: radial-gradient(circle, rgba(168, 85, 247, 0.45) 0%, rgba(124, 58, 237, 0) 70%);
-            filter: blur(70px);
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(124, 58, 237, 0) 70%);
+            filter: blur(65px);
             z-index: 0;
             pointer-events: none;
             animation: pulse-glow 6s ease-in-out infinite alternate;
@@ -63,42 +70,42 @@
 
         .ambient-glow-2 {
             position: absolute;
-            bottom: -60px;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, rgba(147, 51, 234, 0) 70%);
-            filter: blur(60px);
+            bottom: -50px;
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.22) 0%, rgba(147, 51, 234, 0) 70%);
+            filter: blur(55px);
             z-index: 0;
             pointer-events: none;
         }
 
         @keyframes pulse-glow {
-            0% { transform: scale(0.9) translate(-10px, -10px); opacity: 0.6; }
-            100% { transform: scale(1.15) translate(15px, 15px); opacity: 1; }
+            0% { transform: scale(0.9) translate(-10px, -10px); opacity: 0.5; }
+            100% { transform: scale(1.15) translate(15px, 15px); opacity: 0.9; }
         }
 
         /* Обертка для 3D трансформации */
         .hud-scene {
             width: 100%;
-            max-width: 360px;
+            max-width: 350px;
             z-index: 1;
             transform-style: preserve-3d;
             will-change: transform;
         }
 
-        /* Главная голографическая карточка с динамическим бликом */
+        /* Главная голографическая карточка */
         .hud-card {
             position: relative;
             width: 100%;
             background: rgba(18, 10, 36, 0.78);
             border: 1px solid rgba(192, 132, 252, 0.4);
-            border-radius: 32px;
-            padding: 28px 22px;
+            border-radius: 30px;
+            padding: 26px 20px;
             backdrop-filter: blur(35px);
             -webkit-backdrop-filter: blur(35px);
             box-shadow: 
-                0 30px 70px rgba(0, 0, 0, 0.9),
-                0 0 45px rgba(147, 51, 234, 0.35),
+                0 25px 60px rgba(0, 0, 0, 0.85),
+                0 0 40px rgba(147, 51, 234, 0.3),
                 inset 0 1px 2px rgba(255, 255, 255, 0.35);
             display: flex;
             flex-direction: column;
@@ -108,16 +115,15 @@
             overflow: hidden;
         }
 
-        /* Спекулярный динамический световой блик карточки */
+        /* Спекулярный динамический световой блик */
         .card-specular-glare {
             position: absolute;
             inset: 0;
-            border-radius: 32px;
-            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.22) 0%, rgba(192, 132, 252, 0.08) 40%, transparent 70%);
+            border-radius: 30px;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.22) 0%, rgba(192, 132, 252, 0.06) 45%, transparent 75%);
             pointer-events: none;
             z-index: 10;
             mix-blend-mode: overlay;
-            transition: opacity 0.3s ease;
         }
 
         /* Угловые прицелы */
@@ -144,7 +150,7 @@
             text-transform: uppercase;
             color: rgba(216, 180, 254, 0.85);
             font-family: monospace;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             transform: translateZ(20px);
         }
 
@@ -167,21 +173,20 @@
         /* ============ 3D ГОЛОГРАФИЧЕСКИЙ РИГ КАМЕРЫ ============ */
         .camera-3d-rig {
             position: relative;
-            width: 130px;
-            height: 130px;
-            margin: 8px 0 18px;
+            width: 120px;
+            height: 120px;
+            margin: 6px 0 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             transform-style: preserve-3d;
-            perspective: 800px;
+            perspective: 600px;
         }
 
-        /* Внешнее орбитальное кольцо */
         .rig-ring-outer {
             position: absolute;
-            width: 124px;
-            height: 124px;
+            width: 116px;
+            height: 116px;
             border-radius: 50%;
             border: 2px dashed rgba(56, 189, 248, 0.45);
             box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
@@ -189,69 +194,64 @@
             animation: ring-spin 12s linear infinite;
         }
 
-        /* Внутреннее светящееся кольцо */
         .rig-ring-inner {
             position: absolute;
-            width: 106px;
-            height: 106px;
+            width: 98px;
+            height: 98px;
             border-radius: 50%;
-            border: 1.5px solid rgba(244, 63, 94, 0.4);
-            transform: translateZ(25px);
+            border: 1.5px solid rgba(244, 63, 94, 0.35);
+            transform: translateZ(22px);
             animation: ring-spin-reverse 8s linear infinite;
         }
 
         @keyframes ring-spin { 100% { transform: translateZ(10px) rotate(360deg); } }
-        @keyframes ring-spin-reverse { 100% { transform: translateZ(25px) rotate(-360deg); } }
+        @keyframes ring-spin-reverse { 100% { transform: translateZ(22px) rotate(-360deg); } }
 
-        /* Базовый стеклянный куб камеры */
         .rig-body-cube {
             position: relative;
-            width: 86px;
-            height: 86px;
-            border-radius: 26px;
+            width: 80px;
+            height: 80px;
+            border-radius: 24px;
             background: linear-gradient(135deg, rgba(168, 85, 247, 0.35) 0%, rgba(99, 102, 241, 0.2) 100%);
             border: 1.5px solid rgba(216, 180, 254, 0.6);
             box-shadow: 
-                0 18px 40px rgba(124, 58, 237, 0.5),
-                inset 0 0 25px rgba(192, 132, 252, 0.35);
+                0 15px 35px rgba(124, 58, 237, 0.5),
+                inset 0 0 20px rgba(192, 132, 252, 0.35);
             transform-style: preserve-3d;
-            transform: translateZ(35px);
+            transform: translateZ(30px);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
         }
 
-        /* Выдвинутая вперед 3D-линза */
         .rig-lens-barrel {
             position: absolute;
-            width: 52px;
-            height: 52px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             background: radial-gradient(circle, rgba(147, 51, 234, 0.6) 0%, rgba(18, 10, 36, 0.9) 75%);
             border: 2px solid rgba(56, 189, 248, 0.8);
             box-shadow: 0 0 16px rgba(56, 189, 248, 0.5), inset 0 0 10px rgba(192, 132, 252, 0.8);
-            transform: translateZ(45px);
+            transform: translateZ(42px);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* Главная иконка фотоаппарата с ультра-глубиной */
         .rig-icon {
-            font-size: 38px;
-            transform: translateZ(60px);
+            font-size: 36px;
+            transform: translateZ(55px);
             filter: drop-shadow(0 10px 18px rgba(0,0,0,0.8)) drop-shadow(0 0 14px rgba(192, 132, 252, 0.9));
             display: inline-block;
             animation: pulse-icon 3s ease-in-out infinite alternate;
         }
 
         @keyframes pulse-icon {
-            0% { transform: translateZ(60px) scale(0.96); }
-            100% { transform: translateZ(60px) scale(1.06); }
+            0% { transform: translateZ(55px) scale(0.96); }
+            100% { transform: translateZ(55px) scale(1.06); }
         }
 
-        /* 3D Лазерный луч */
         .laser-beam-3d {
             position: absolute;
             left: 5%;
@@ -259,7 +259,7 @@
             height: 2px;
             background: linear-gradient(90deg, transparent, #ffffff, var(--neon-purple), var(--neon-pink), transparent);
             box-shadow: 0 0 12px var(--neon-purple), 0 0 20px var(--neon-pink);
-            transform: translateZ(40px);
+            transform: translateZ(35px);
             animation: laser-sweep 2.2s ease-in-out infinite alternate;
         }
 
@@ -269,7 +269,7 @@
         }
 
         h1 {
-            font-size: 22px;
+            font-size: 21px;
             font-weight: 800;
             letter-spacing: -0.5px;
             background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 50%, #c084fc 100%);
@@ -277,15 +277,15 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 2px;
             text-transform: uppercase;
-            transform: translateZ(25px);
+            transform: translateZ(22px);
         }
 
         .subtitle {
-            font-size: 12.5px;
+            font-size: 12px;
             color: #d8b4fe;
             opacity: 0.85;
             margin-bottom: 14px;
-            transform: translateZ(22px);
+            transform: translateZ(20px);
         }
 
         /* Переключатель: Все vs Моя группа */
@@ -296,15 +296,16 @@
             border: 1px solid rgba(168, 85, 247, 0.25);
             border-radius: 16px;
             padding: 4px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             gap: 4px;
-            transform: translateZ(26px);
+            transform: translateZ(25px);
+            touch-action: manipulation;
         }
 
         .toggle-btn {
             flex: 1;
-            padding: 12px 10px;
-            font-size: 13.5px;
+            padding: 11px 8px;
+            font-size: 13px;
             font-weight: 700;
             border-radius: 12px;
             border: none;
@@ -316,6 +317,7 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
+            touch-action: manipulation;
         }
 
         .toggle-btn.active {
@@ -326,15 +328,15 @@
         }
 
         .toggle-btn:active {
-            transform: scale(0.97);
+            transform: scale(0.96);
         }
 
         /* Неоновая кнопка сканера */
         .cyber-btn {
             position: relative;
             width: 100%;
-            padding: 16px 20px;
-            font-size: 16px;
+            padding: 15px 18px;
+            font-size: 15.5px;
             font-weight: 700;
             letter-spacing: 0.5px;
             text-transform: uppercase;
@@ -351,6 +353,7 @@
             box-shadow: 0 10px 30px rgba(124, 58, 237, 0.55), 0 0 22px rgba(168, 85, 247, 0.35);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             transform: translateZ(30px);
+            touch-action: manipulation;
         }
 
         .cyber-btn::before {
@@ -370,7 +373,7 @@
         }
 
         .cyber-btn:active {
-            transform: translateZ(20px) scale(0.96);
+            transform: translateZ(20px) scale(0.95);
         }
 
         .cyber-btn svg {
@@ -442,6 +445,10 @@
         if (tg) {
             tg.ready();
             tg.expand();
+            // Блокировка закрытия шторки свайпом вниз
+            if (tg.disableVerticalSwipes) {
+                tg.disableVerticalSwipes();
+            }
         }
 
         let currentMode = localStorage.getItem('qr_target_mode') || 'ALL';
@@ -532,16 +539,15 @@
 
         function initParticles() {
             particles = [];
-            const count = Math.floor(width < 600 ? 28 : 45);
+            const count = Math.floor(width < 600 ? 25 : 40);
             for (let i = 0; i < count; i++) {
                 particles.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
                     size: Math.random() * 2 + 0.8,
-                    speedY: Math.random() * 0.4 + 0.15,
-                    speedX: (Math.random() - 0.5) * 0.2,
-                    alpha: Math.random() * 0.6 + 0.2,
-                    pulse: Math.random() * 0.05
+                    speedY: Math.random() * 0.35 + 0.15,
+                    speedX: (Math.random() - 0.5) * 0.15,
+                    alpha: Math.random() * 0.6 + 0.2
                 });
             }
         }
@@ -549,8 +555,8 @@
         function drawBackground() {
             ctx.clearRect(0, 0, width, height);
 
-            // 1. Анимированная перспективная кибер-сетка
-            gridOffset = (gridOffset + 0.35) % 40;
+            // Анимированная кибер-сетка
+            gridOffset = (gridOffset + 0.3) % 40;
             ctx.strokeStyle = 'rgba(147, 51, 234, 0.07)';
             ctx.lineWidth = 1;
 
@@ -565,20 +571,19 @@
             }
             ctx.stroke();
 
-            // 2. Парящие неоновые частицы (Dust Particles)
+            // Парящие частицы
             for (let i = 0; i < particles.length; i++) {
                 const p = particles[i];
                 p.y -= p.speedY;
                 p.x += p.speedX;
-                p.alpha += Math.sin(Date.now() * 0.003 + i) * 0.005;
 
                 if (p.y < -10) p.y = height + 10;
                 if (p.x < -10) p.x = width + 10;
                 if (p.x > width + 10) p.x = -10;
 
-                ctx.fillStyle = `rgba(192, 132, 252, ${Math.max(0.1, Math.min(0.8, p.alpha))})`;
+                ctx.fillStyle = `rgba(192, 132, 252, ${p.alpha})`;
                 ctx.shadowColor = '#c084fc';
-                ctx.shadowBlur = 8;
+                ctx.shadowBlur = 6;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                 ctx.fill();
@@ -592,7 +597,7 @@
         resizeCanvas();
         requestAnimationFrame(drawBackground);
 
-        // ============ 3D PARALLAX & ДИНАМИЧЕСКИЙ ГИРОСКОП ============
+        // ============ 3D PARALLAX ЧЕРЕЗ ГИРОСКОП ТЕЛЕФОНА ============
         const hudScene = document.getElementById('hud-scene');
         const cameraRig = document.getElementById('camera-rig');
         const glare = document.getElementById('specular-glare');
@@ -607,60 +612,71 @@
         let curCamX = 0;
         let curCamY = 0;
 
-        // Плавная интерполяция (Lerp Physics)
+        // Плавная физика интерполяции (Lerp)
         function renderParallax() {
             curRotX += (targetRotX - curRotX) * 0.08;
             curRotY += (targetRotY - curRotY) * 0.08;
             curCamX += (targetCamX - curCamX) * 0.1;
             curCamY += (targetCamY - curCamY) * 0.1;
 
-            // Наклон всей карточки
             hudScene.style.transform = `rotateX(${curRotX.toFixed(2)}deg) rotateY(${curRotY.toFixed(2)}deg)`;
+            cameraRig.style.transform = `rotateX(${(-curCamX * 1.8).toFixed(2)}deg) rotateY(${(-curCamY * 1.8).toFixed(2)}deg)`;
 
-            // Увеличенный угол наклона для 3D-рига камеры (эффект парения в объеме)
-            cameraRig.style.transform = `rotateX(${(-curCamX * 1.6).toFixed(2)}deg) rotateY(${(-curCamY * 1.6).toFixed(2)}deg)`;
-
-            // Перемещение светового блика по карточке
             const glareX = 50 + curRotY * 2.2;
             const glareY = 50 - curRotX * 2.2;
-            glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.28) 0%, rgba(192, 132, 252, 0.08) 45%, transparent 75%)`;
+            glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.26) 0%, rgba(192, 132, 252, 0.06) 45%, transparent 75%)`;
 
             requestAnimationFrame(renderParallax);
         }
         requestAnimationFrame(renderParallax);
 
-        // 1. Аппаратный гироскоп мобильного устройства
+        // Обработка наклона устройства (iOS + Android)
         let baseBeta = null;
         let baseGamma = null;
 
         function handleOrientation(e) {
             if (e.beta === null || e.gamma === null) return;
 
-            // Калибровка под естественный угол хвата (около 45 градусов)
+            // Естественный хват смартфона (около 45° к горизонту)
             if (baseBeta === null) {
                 baseBeta = 45;
                 baseGamma = 0;
             }
 
-            let deltaBeta = e.beta - baseBeta;   // Наклон вперед/назад (-X)
-            let deltaGamma = e.gamma - baseGamma; // Наклон влево/вправо (+Y)
+            let deltaBeta = e.beta - baseBeta;    // Тангаж (вперед/назад)
+            let deltaGamma = e.gamma - baseGamma; // Крен (влево/вправо)
 
             deltaBeta = Math.max(-30, Math.min(30, deltaBeta));
             deltaGamma = Math.max(-30, Math.min(30, deltaGamma));
 
-            targetRotX = -deltaBeta * 0.45;
-            targetRotY = deltaGamma * 0.55;
+            targetRotX = -deltaBeta * 0.55;
+            targetRotY = deltaGamma * 0.65;
 
             targetCamX = targetRotX;
             targetCamY = targetRotY;
         }
 
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+        // Запрос разрешения на гироскоп для iOS 13+
+        async function enableGyro() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const res = await DeviceOrientationEvent.requestPermission();
+                    if (res === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation, true);
+                    }
+                } catch(e) {}
+            } else if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', handleOrientation, true);
+            }
         }
 
-        // 2. Интерактивный тач / курсор фоллбэк (для превью и тапов)
+        // Подключаем гироскоп при первом тапе
+        window.addEventListener('touchstart', enableGyro, { once: true, passive: true });
+        window.addEventListener('click', enableGyro, { once: true });
+
+        // Курсор мыши ТОЛЬКО для десктопа (сенсорные тапы игнорируются)
         window.addEventListener('pointermove', (e) => {
+            if (e.pointerType !== 'mouse') return;
             const centerX = window.innerWidth / 2;
             const centerY = window.innerHeight / 2;
             const normX = (e.clientX - centerX) / centerX;
@@ -675,6 +691,7 @@
 
         window.onload = () => {
             updateUI();
+            enableGyro();
         };
     </script>
 </body>
