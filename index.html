@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>⚡ PULSE CYBER SCANNER</title>
+        <!-- PWA & Offline Cache -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0b0b14">
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -644,6 +649,17 @@
         window.onload = () => {
             updateUI();
         };
+    </script>
+
+    <!-- Service Worker Registration for Instant Offline Cache (GitHub Pages) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js', { scope: './' })
+                    .then((reg) => console.log('⚡ PWA Service Worker Registered! Scope:', reg.scope))
+                    .catch((err) => console.warn('SW registration failed:', err));
+            });
+        }
     </script>
 </body>
 </html>
