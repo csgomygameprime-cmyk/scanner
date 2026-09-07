@@ -509,7 +509,7 @@
             }
 
             if (tg?.showScanQrPopup) {
-                const targetText = currentMode === 'ALL' ? 'всех аккаунтов' : 'моей группы';
+                const targetText = currentMode === 'FLOW' ? 'аккаунтов потока' : 'моей группы';
                 tg.showScanQrPopup({ text: `⚡ Отметка для: ${targetText}` }, function(text) {
                     if (text) {
                         if (tg?.HapticFeedback) {
