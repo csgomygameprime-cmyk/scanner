@@ -426,10 +426,10 @@
             <h1>Fast QR Scanner</h1>
             <p class="subtitle">Параллельный залп по сокетам (&lt;0.1s)</p>
 
-            <!-- Селектор: Все vs Моя группа -->
+            <!-- Селектор: Поток vs Моя группа -->
             <div class="mode-toggle-container">
-                <button class="toggle-btn active" id="btn-all" onclick="selectMode('ALL')">
-                    ⚡ Все
+                <button class="toggle-btn active" id="btn-flow" onclick="selectMode('FLOW')">
+                    🌊 Поток
                 </button>
                 <button class="toggle-btn" id="btn-my" onclick="selectMode('MY_GROUP')">
                     👥 Моя группа
@@ -456,7 +456,8 @@
             }
         }
 
-        let currentMode = localStorage.getItem('qr_target_mode') || 'ALL';
+        let currentMode = localStorage.getItem('qr_target_mode') || 'FLOW';
+        if (currentMode === 'ALL') currentMode = 'FLOW';
 
         // ============ ЗВУКОВОЙ ДВИЖОК ============
         function playSciFiBeep(freq = 880, duration = 0.08) {
@@ -478,17 +479,17 @@
 
         function updateUI() {
             const display = document.getElementById('target-display');
-            const btnAll = document.getElementById('btn-all');
+            const btnFlow = document.getElementById('btn-flow');
             const btnMy = document.getElementById('btn-my');
 
             if (currentMode === 'MY_GROUP') {
                 display.innerText = 'TARGET: MY GROUP';
-                btnAll.classList.remove('active');
-                btnMy.classList.add('active');
+                if (btnFlow) btnFlow.classList.remove('active');
+                if (btnMy) btnMy.classList.add('active');
             } else {
-                display.innerText = 'TARGET: ALL';
-                btnMy.classList.remove('active');
-                btnAll.classList.add('active');
+                display.innerText = 'TARGET: FLOW';
+                if (btnMy) btnMy.classList.remove('active');
+                if (btnFlow) btnFlow.classList.add('active');
             }
         }
 
