@@ -1873,7 +1873,7 @@
                         <div style="display:flex; align-items:center; gap:8px;">
                             <button class="journal-tag-btn" onclick="requestLessonJournal('${lesson.pairNum}', '${lesson.time}', '${lesson.title.replace(/'/g, "\\'")}', '${dateIso}')">
                                 <span>👥</span>
-                                <span>Журнал</span>
+                                <span>Явка группы</span>
                             </button>
                             ${roomBtnHtml}
                         </div>
@@ -1910,7 +1910,7 @@
                 tg.sendData(payload);
                 tg.close();
             } else {
-                alert(`Журнал для группы ${currentGroup} (${title}) запрашивается через Telegram бота`);
+                alert(`Явка группы ${currentGroup} (${title}) запрашивается через Telegram бота`);
             }
         }
 
