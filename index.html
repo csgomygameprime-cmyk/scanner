@@ -1643,22 +1643,32 @@
 
         // ============ АККУРАТНЫЙ СВАЙП НЕДЕЛЬ ВЛЕВО / ВПРАВО ============
         function setupScheduleSwipe() {
-            const container = document.getElementById('schedule-view-container');
-            if (!container) return;
+            // Привязываем свайп только к области со списком пар (sched-list),
+            // чтобы горизонтальный скролл списка групп или дней в topbar не переключал неделю
+            const listEl = document.getElementById('sched-list') || document.getElementById('schedule-view-container');
+            if (!listEl) return;
 
             let touchStartX = 0;
             let touchStartY = 0;
             let touchEndX = 0;
             let touchEndY = 0;
+            let ignoreSwipe = false;
 
-            container.addEventListener('touchstart', (e) => {
+            listEl.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
+                    // Если жест начался внутри topbar (выбор группы, дни и т.д.), игнорируем свайп недели
+                    if (e.target.closest('.sched-topbar') || e.target.closest('.sched-group-picker') || e.target.closest('.days-bar')) {
+                        ignoreSwipe = true;
+                        return;
+                    }
+                    ignoreSwipe = false;
                     touchStartX = e.touches[0].clientX;
                     touchStartY = e.touches[0].clientY;
                 }
             }, { passive: true });
 
-            container.addEventListener('touchend', (e) => {
+            listEl.addEventListener('touchend', (e) => {
+                if (ignoreSwipe) return;
                 if (e.changedTouches.length === 1) {
                     touchEndX = e.changedTouches[0].clientX;
                     touchEndY = e.changedTouches[0].clientY;
@@ -2269,8 +2279,9 @@
                 selector.appendChild(btn);
             });
 
-            // Выбираем 1 этаж по умолчанию (или первый доступный)
-            const defaultFloor = floors.includes('1') ? '1' : floors[0];
+            // По умолчанию: для В-78 (Вернадского) выбираем 2 этаж, для остальных (МП-1) — 1 этаж
+            const targetDefault = (campus === 'v78') ? '2' : '1';
+            const defaultFloor = floors.includes(targetDefault) ? targetDefault : (floors.includes('1') ? '1' : floors[0]);
             selectFloor(defaultFloor);
         }
 
