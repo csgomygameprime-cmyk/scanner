@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>⚡ PULSE CYBER SCANNER</title>
-        <!-- PWA & Offline Cache -->
+    <title>⚡ PULSE CYBER SCANNER & MAPS</title>
+    <!-- PWA & Offline Cache -->
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0b0b14">
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Автономная векторная база карт МИРЭА (В-78 и МП-1) -->
+    <script src="maps_data.js"></script>
+    <!-- Автономная база расписания групп -->
+    <script src="schedule_data.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -89,13 +93,14 @@
             100% { transform: scale(1.15) translate(15px, 15px); opacity: 0.85; }
         }
 
-        /* 3D Сцена */
+        /* 3D Сцена Сканера */
         .hud-scene {
             width: 100%;
             max-width: 350px;
-            z-index: 1;
+            z-index: 10;
             transform-style: preserve-3d;
             will-change: transform;
+            margin-bottom: 50px;
         }
 
         /* Главная голографическая карточка */
@@ -120,287 +125,963 @@
             overflow: hidden;
         }
 
-        /* Динамический световой блик */
         .card-specular-glare {
             position: absolute;
-            inset: 0;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             border-radius: 30px;
-            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.22) 0%, rgba(192, 132, 252, 0.06) 45%, transparent 75%);
             pointer-events: none;
-            z-index: 10;
             mix-blend-mode: overlay;
+            z-index: 2;
         }
 
-        /* Угловые прицелы */
         .corner {
             position: absolute;
             width: 14px;
             height: 14px;
-            border-color: var(--neon-purple);
+            border-color: var(--neon-cyan);
+            border-style: solid;
             pointer-events: none;
-            transform: translateZ(15px);
+            opacity: 0.8;
         }
-        .corner-tl { top: 12px; left: 12px; border-top: 2px solid; border-left: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
-        .corner-tr { top: 12px; right: 12px; border-top: 2px solid; border-right: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
-        .corner-bl { bottom: 12px; left: 12px; border-bottom: 2px solid; border-left: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
-        .corner-br { bottom: 12px; right: 12px; border-bottom: 2px solid; border-right: 2px solid; filter: drop-shadow(0 0 5px var(--neon-purple)); }
+        .corner-tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
 
         .top-telemetry {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
             width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
             letter-spacing: 1.5px;
+            margin-bottom: 12px;
             text-transform: uppercase;
-            color: rgba(216, 180, 254, 0.85);
-            font-family: monospace;
-            margin-bottom: 10px;
-            transform: translateZ(20px);
         }
 
         .status-dot {
             display: inline-block;
             width: 7px;
             height: 7px;
-            background: #22c55e;
+            background-color: var(--neon-green);
             border-radius: 50%;
-            box-shadow: 0 0 10px #22c55e;
             margin-right: 6px;
-            animation: blink 1.2s infinite ease-in-out;
+            box-shadow: 0 0 10px var(--neon-green);
+            animation: blink 2s infinite ease-in-out;
         }
 
         @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.85); }
         }
 
-        /* ============ 3D ОБЪЕМНЫЙ РИГ ФОТОАППАРАТА ============ */
         .camera-3d-rig {
             position: relative;
             width: 120px;
             height: 120px;
-            margin: 6px 0 16px;
+            margin: 6px auto 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             transform-style: preserve-3d;
-            perspective: 800px;
-            will-change: transform;
         }
 
         .rig-ring-outer {
             position: absolute;
             width: 116px;
             height: 116px;
+            border: 1px dashed rgba(192, 132, 252, 0.45);
             border-radius: 50%;
-            border: 2px dashed rgba(56, 189, 248, 0.5);
-            box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
-            transform: translateZ(10px);
-            animation: ring-spin 10s linear infinite;
+            animation: spinRigOuter 24s linear infinite;
         }
 
         .rig-ring-inner {
             position: absolute;
-            width: 98px;
-            height: 98px;
+            width: 96px;
+            height: 96px;
+            border: 2px solid transparent;
+            border-top: 2px solid var(--neon-cyan);
+            border-bottom: 2px solid var(--neon-pink);
             border-radius: 50%;
-            border: 1.5px solid rgba(244, 63, 94, 0.45);
-            transform: translateZ(22px);
-            animation: ring-spin-reverse 7s linear infinite;
+            animation: spinRigInner 7s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
         }
 
-        @keyframes ring-spin { 100% { transform: translateZ(10px) rotate(360deg); } }
-        @keyframes ring-spin-reverse { 100% { transform: translateZ(22px) rotate(-360deg); } }
+        @keyframes spinRigOuter { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes spinRigInner { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
 
         .rig-body-cube {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.35) 0%, rgba(99, 102, 241, 0.2) 100%);
-            border: 1.5px solid rgba(216, 180, 254, 0.6);
+            width: 74px;
+            height: 74px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.4), rgba(56, 189, 248, 0.2));
+            border: 1px solid rgba(255, 255, 255, 0.4);
             box-shadow: 
-                0 15px 35px rgba(124, 58, 237, 0.5),
-                inset 0 0 20px rgba(192, 132, 252, 0.35);
-            transform-style: preserve-3d;
-            transform: translateZ(30px);
+                0 0 25px rgba(147, 51, 234, 0.6),
+                inset 0 0 15px rgba(255, 255, 255, 0.25);
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            position: relative;
+            transform: translateZ(25px);
         }
 
         .rig-lens-barrel {
-            position: absolute;
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(147, 51, 234, 0.6) 0%, rgba(18, 10, 36, 0.9) 75%);
-            border: 2px solid rgba(56, 189, 248, 0.8);
-            box-shadow: 0 0 16px rgba(56, 189, 248, 0.5), inset 0 0 10px rgba(192, 132, 252, 0.8);
-            transform: translateZ(42px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: radial-gradient(circle, #0b021d 40%, #1e0840 90%);
+            border: 2px solid var(--neon-purple);
+            box-shadow: 
+                0 0 15px var(--neon-purple),
+                inset 0 0 8px #00ffff;
+            position: absolute;
+            transform: translateZ(12px);
         }
 
         .rig-icon {
-            font-size: 36px;
-            transform: translateZ(55px);
-            filter: drop-shadow(0 10px 18px rgba(0,0,0,0.8)) drop-shadow(0 0 14px rgba(192, 132, 252, 0.9));
-            display: inline-block;
-            animation: pulse-icon 2.5s ease-in-out infinite alternate;
-        }
-
-        @keyframes pulse-icon {
-            0% { transform: translateZ(55px) scale(0.96); }
-            100% { transform: translateZ(55px) scale(1.06); }
+            font-size: 24px;
+            z-index: 3;
+            transform: translateZ(20px);
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
         }
 
         .laser-beam-3d {
             position: absolute;
-            left: 5%;
-            width: 90%;
+            width: 100px;
             height: 2px;
-            background: linear-gradient(90deg, transparent, #ffffff, var(--neon-purple), var(--neon-pink), transparent);
-            box-shadow: 0 0 12px var(--neon-purple), 0 0 20px var(--neon-pink);
-            transform: translateZ(35px);
-            animation: laser-sweep 2.2s ease-in-out infinite alternate;
+            background: linear-gradient(90deg, transparent, #00ffff, #ffffff, #00ffff, transparent);
+            box-shadow: 0 0 12px #00ffff, 0 0 20px #00ffff;
+            animation: laserScan 2.6s ease-in-out infinite;
+            z-index: 4;
+            transform: translateZ(16px);
         }
 
-        @keyframes laser-sweep {
-            0% { top: 12%; opacity: 0.3; }
-            100% { top: 88%; opacity: 1; }
+        @keyframes laserScan {
+            0% { transform: translateY(-30px) translateZ(16px); opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { transform: translateY(30px) translateZ(16px); opacity: 0.2; }
         }
 
         h1 {
             font-size: 21px;
             font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 50%, #c084fc 100%);
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #ffffff 30%, var(--neon-purple) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 2px;
-            text-transform: uppercase;
-            transform: translateZ(22px);
         }
 
         .subtitle {
             font-size: 12px;
-            color: #d8b4fe;
-            opacity: 0.85;
-            margin-bottom: 14px;
-            transform: translateZ(20px);
+            color: rgba(255, 255, 255, 0.55);
+            margin-bottom: 18px;
         }
 
-        /* Переключатель: Все vs Моя группа */
         .mode-toggle-container {
             display: flex;
             width: 100%;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(168, 85, 247, 0.25);
-            border-radius: 16px;
+            background: rgba(10, 4, 22, 0.85);
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            border-radius: 18px;
             padding: 4px;
             margin-bottom: 18px;
-            gap: 4px;
-            transform: translateZ(25px);
-            touch-action: manipulation;
         }
 
         .toggle-btn {
             flex: 1;
-            padding: 11px 8px;
-            font-size: 13px;
-            font-weight: 700;
-            border-radius: 12px;
+            padding: 9px 0;
             border: none;
             background: transparent;
-            color: #d8b4fe;
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 12.5px;
+            font-weight: 700;
+            border-radius: 14px;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            touch-action: manipulation;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-tap-highlight-color: transparent;
         }
 
         .toggle-btn.active {
-            background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.8), rgba(192, 132, 252, 0.4));
             color: #ffffff;
-            box-shadow: 0 4px 18px rgba(147, 51, 234, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.35);
-            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .toggle-btn:active {
-            transform: scale(0.96);
-        }
-
-        /* Неоновая кнопка сканера */
         .cyber-btn {
             position: relative;
             width: 100%;
-            padding: 15px 18px;
-            font-size: 15.5px;
+            padding: 15px;
+            background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
+            border: none;
+            border-radius: 18px;
+            color: #ffffff;
+            font-size: 15px;
             font-weight: 700;
             letter-spacing: 0.5px;
-            text-transform: uppercase;
-            color: #ffffff;
-            background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.55), 0 0 22px rgba(168, 85, 247, 0.35);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateZ(30px);
-            touch-action: manipulation;
-        }
-
-        .cyber-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.5);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-tap-highlight-color: transparent;
         }
 
         .cyber-btn:active {
-            transform: translateZ(20px) scale(0.95);
+            transform: scale(0.97);
+            box-shadow: 0 4px 15px rgba(147, 51, 234, 0.7);
         }
 
         .cyber-btn svg {
-            width: 22px;
-            height: 22px;
-            fill: #ffffff;
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
         }
+
+        /* ============ НАВИГАЦИОННЫЙ ТАБ-БАР ============ */
+        .bottom-nav {
+            position: fixed;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+            background: rgba(18, 10, 36, 0.88);
+            border: 1px solid rgba(192, 132, 252, 0.35);
+            border-radius: 26px;
+            padding: 6px 10px;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(147, 51, 234, 0.3);
+        }
+
+        .nav-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.65), rgba(192, 132, 252, 0.3));
+            border-color: rgba(192, 132, 252, 0.6);
+            color: #ffffff;
+            box-shadow: 0 0 18px rgba(168, 85, 247, 0.45);
+        }
+
+        .nav-tab .nav-icon {
+            font-size: 16px;
+        }
+
+        /* ============ МОДУЛЬ АВТОНОМНОЙ КАРТЫ ============ */
+        #map-view-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: #060212;
+            touch-action: none;
+        }
+
+        .map-topbar {
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            right: 12px;
+            z-index: 120;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .campus-picker {
+            display: flex;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .campus-btn {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            background: rgba(18, 10, 36, 0.85);
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 700;
+            font-size: 13px;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .campus-btn.active {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.75), rgba(192, 132, 252, 0.35));
+            border-color: rgba(192, 132, 252, 0.7);
+            color: #ffffff;
+            box-shadow: 0 0 18px rgba(168, 85, 247, 0.45);
+        }
+
+        .map-search-wrapper {
+            position: relative;
+            width: 100%;
+            pointer-events: auto;
+        }
+
+        #map-search-input {
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            background: rgba(18, 10, 36, 0.85);
+            color: #ffffff;
+            font-size: 13px;
+            outline: none;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        #map-search-input:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+        }
+
+        .map-search-dropdown {
+            position: absolute;
+            top: 44px;
+            left: 0;
+            right: 0;
+            max-height: 220px;
+            overflow-y: auto;
+            background: rgba(18, 10, 36, 0.95);
+            border: 1px solid rgba(192, 132, 252, 0.4);
+            border-radius: 16px;
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.85);
+            display: none;
+            z-index: 150;
+        }
+
+        .search-item {
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(192, 132, 252, 0.15);
+            font-size: 13px;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:active, .search-item:hover {
+            background: rgba(147, 51, 234, 0.3);
+            color: var(--neon-cyan);
+        }
+
+        .search-item-floor {
+            font-size: 11px;
+            color: var(--neon-purple);
+            font-weight: 600;
+        }
+
+        #map-viewport {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            touch-action: none;
+            cursor: grab;
+        }
+
+        #map-viewport:active {
+            cursor: grabbing;
+        }
+
+        #map-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .floor-selector {
+            position: absolute;
+            top: 125px;
+            right: 12px;
+            z-index: 120;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: rgba(18, 10, 36, 0.85);
+            border: 1px solid rgba(192, 132, 252, 0.35);
+            border-radius: 20px;
+            padding: 6px;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .floor-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 14px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .floor-btn.active {
+            background: linear-gradient(135deg, #9333ea, #c084fc);
+            color: #ffffff;
+            box-shadow: 0 0 14px rgba(192, 132, 252, 0.7);
+        }
+
+        .map-controls {
+            position: absolute;
+            bottom: 82px;
+            right: 12px;
+            z-index: 120;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ctrl-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 16px;
+            border: 1px solid rgba(192, 132, 252, 0.35);
+            background: rgba(18, 10, 36, 0.85);
+            color: #ffffff;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .ctrl-btn:active {
+            transform: scale(0.92);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+        }
+
+        .room-info-card {
+            position: absolute;
+            bottom: 80px;
+            left: 12px;
+            max-width: calc(100vw - 80px);
+            background: rgba(18, 10, 36, 0.92);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 20px;
+            padding: 12px 18px;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.3);
+            z-index: 125;
+            display: none;
+            animation: slideUpCard 0.25s ease-out;
+        }
+
+        @keyframes slideUpCard {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .room-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        #room-card-title {
+            font-weight: 800;
+            font-size: 16px;
+            color: #ffffff;
+        }
+
+        .room-card-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 2px 6px;
+        }
+
+        .room-card-sub {
+            font-size: 12px;
+            color: var(--neon-purple);
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        /* Элементы SVG карты */
+        .map-area-poly {
+            fill: rgba(30, 16, 60, 0.78);
+            stroke: rgba(192, 132, 252, 0.32);
+            stroke-width: 8;
+            cursor: pointer;
+            transition: fill 0.15s, stroke 0.15s;
+        }
+
+        .map-area-poly:hover, .map-area-poly:active {
+            fill: rgba(147, 51, 234, 0.45);
+            stroke: var(--neon-cyan);
+            stroke-width: 14;
+        }
+
+        .map-area-poly.highlighted {
+            fill: rgba(56, 189, 248, 0.55) !important;
+            stroke: #38bdf8 !important;
+            stroke-width: 20 !important;
+            animation: neonPulse 1.2s infinite alternate;
+        }
+
+        @keyframes neonPulse {
+            from { stroke-width: 14; filter: drop-shadow(0 0 8px #38bdf8); }
+            to { stroke-width: 26; filter: drop-shadow(0 0 25px #38bdf8); }
+        }
+
+        .map-area-poly.type-toilet {
+            fill: rgba(56, 189, 248, 0.18);
+            stroke: rgba(56, 189, 248, 0.4);
+        }
+
+        .map-area-poly.type-food {
+            fill: rgba(245, 158, 11, 0.22);
+            stroke: rgba(245, 158, 11, 0.45);
+        }
+
+        .map-area-poly.type-entrance {
+            fill: rgba(34, 197, 94, 0.22);
+            stroke: rgba(34, 197, 94, 0.45);
+        }
+
+        .map-wall-line {
+            stroke: rgba(255, 255, 255, 0.48);
+            stroke-width: 14;
+            stroke-linecap: round;
+            pointer-events: none;
+        }
+
+        .map-label-text {
+            fill: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-weight: 700;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-select: none;
+            paint-order: stroke fill;
+            stroke: #060212;
+            stroke-width: 14px;
+            stroke-linejoin: round;
+        }
+        .map-label-text.label-wc {
+            fill: var(--neon-cyan);
+            font-weight: 800;
+        }
+        .map-label-text.label-food {
+            fill: #fbbf24;
+            font-weight: 800;
+        }
+        .map-label-text.label-entrance {
+            fill: #4ade80;
+            font-weight: 800;
+        }
+    
+        /* ============ МОДУЛЬ РАСПИСАНИЯ ============ */
+        #schedule-view-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            background-color: #060212;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .sched-topbar {
+            padding: 14px 16px 10px;
+            background: rgba(18, 10, 36, 0.9);
+            border-bottom: 1px solid rgba(192, 132, 252, 0.25);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .sched-group-picker {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 2px;
+        }
+        .sched-group-picker::-webkit-scrollbar { display: none; }
+
+        .group-chip {
+            padding: 8px 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            background: rgba(28, 14, 52, 0.7);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .group-chip.active {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.8), rgba(192, 132, 252, 0.4));
+            border-color: rgba(192, 132, 252, 0.7);
+            color: #ffffff;
+            box-shadow: 0 0 16px rgba(168, 85, 247, 0.4);
+        }
+
+        .sched-controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .parity-toggle {
+            display: flex;
+            background: rgba(10, 4, 22, 0.8);
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            border-radius: 14px;
+            padding: 3px;
+        }
+
+        .parity-btn {
+            padding: 5px 12px;
+            border-radius: 11px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .parity-btn.active {
+            background: linear-gradient(135deg, #9333ea, #c084fc);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+        }
+
+        .days-bar {
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .day-tab {
+            flex: 1;
+            padding: 8px 0;
+            text-align: center;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .day-tab.active {
+            background: rgba(192, 132, 252, 0.2);
+            border-color: var(--neon-cyan);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .sched-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 16px 85px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-sizing: border-box;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Карточка пары (в стиле официального скрина) */
+        .lesson-card {
+            position: relative;
+            background: rgba(20, 10, 40, 0.85);
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .lesson-card:active {
+            transform: scale(0.985);
+            border-color: var(--neon-cyan);
+        }
+
+        .lesson-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .lesson-num-time {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--neon-purple);
+        }
+
+        .lesson-badge {
+            padding: 3px 9px;
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .badge-lk { background: rgba(56, 189, 248, 0.2); color: var(--neon-cyan); border: 1px solid rgba(56, 189, 248, 0.4); }
+        .badge-pr { background: rgba(168, 85, 247, 0.2); color: var(--neon-purple); border: 1px solid rgba(168, 85, 247, 0.4); }
+        .badge-lab { background: rgba(244, 63, 94, 0.2); color: var(--neon-pink); border: 1px solid rgba(244, 63, 94, 0.4); }
+        .badge-sr { background: rgba(34, 197, 94, 0.2); color: var(--neon-green); border: 1px solid rgba(34, 197, 94, 0.4); }
+
+        .lesson-title {
+            font-size: 14.5px;
+            font-weight: 700;
+            line-height: 1.35;
+            color: #ffffff;
+        }
+
+        .lesson-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 6px;
+            border-top: 1px solid rgba(192, 132, 252, 0.15);
+            gap: 10px;
+        }
+
+        .lesson-teacher {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.65);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Кнопка кабинета с интерактивным переходом */
+        .room-tag-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--neon-cyan);
+            background: rgba(56, 189, 248, 0.12);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .room-tag-btn:active {
+            background: rgba(56, 189, 248, 0.35);
+            transform: scale(0.95);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+        }
+
+        .room-tag-btn .room-icon {
+            font-size: 11px;
+            color: var(--neon-cyan);
+        }
+
+        
+        /* Разделитель перерыва между парами */
+        .lesson-break-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 2px 0;
+            padding: 4px 10px;
+        }
+
+        .lesson-break-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(192, 132, 252, 0.25), transparent);
+        }
+
+        .lesson-break-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: rgba(18, 10, 36, 0.65);
+            border: 1px dashed rgba(192, 132, 252, 0.35);
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .lesson-break-badge.break-long {
+            border-color: rgba(56, 189, 248, 0.45);
+            color: var(--neon-cyan);
+            background: rgba(56, 189, 248, 0.08);
+        }
+
+        
+        /* Подсветка текущей активной пары прямо сейчас */
+        .lesson-card.is-current-now {
+            border: 1.5px solid var(--neon-cyan) !important;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.45), inset 0 0 15px rgba(56, 189, 248, 0.12) !important;
+            background: linear-gradient(135deg, rgba(28, 16, 56, 0.95), rgba(18, 30, 60, 0.9)) !important;
+            animation: currentLessonPulse 2.4s infinite alternate ease-in-out;
+        }
+
+        @keyframes currentLessonPulse {
+            from { border-color: rgba(56, 189, 248, 0.7); box-shadow: 0 0 15px rgba(56, 189, 248, 0.35); }
+            to { border-color: #38bdf8; box-shadow: 0 0 30px rgba(56, 189, 248, 0.65), inset 0 0 15px rgba(56, 189, 248, 0.2); }
+        }
+
+        .current-live-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 8px;
+            border-radius: 8px;
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid var(--neon-green);
+            color: #ffffff;
+            font-size: 10.5px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--neon-green);
+            animation: blink 1.2s infinite ease-in-out;
+        }
+
+        /* Подсветка текущего перерыва прямо сейчас */
+        .lesson-break-badge.is-current-break {
+            border: 1.5px solid var(--neon-green) !important;
+            color: #ffffff !important;
+            background: rgba(34, 197, 94, 0.18) !important;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.5) !important;
+            animation: breakGlow 1.8s infinite alternate ease-in-out;
+        }
+
+        @keyframes breakGlow {
+            from { box-shadow: 0 0 10px rgba(34, 197, 94, 0.3); }
+            to { box-shadow: 0 0 25px rgba(34, 197, 94, 0.75); }
+        }
+
+        .empty-sched-msg {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
     </style>
 </head>
 <body>
-
-    <!-- Фоновый Canvas: Кибер-сетка и Парящие Частицы -->
+    <!-- 60 FPS Фоновый Canvas -->
     <canvas id="cyber-canvas"></canvas>
-
     <div class="ambient-glow-1"></div>
     <div class="ambient-glow-2"></div>
 
+    <!-- Вкладка 1: СКАНЕР -->
     <div class="hud-scene" id="hud-scene">
         <div class="hud-card" id="hud-card">
             <div class="card-specular-glare" id="specular-glare"></div>
-
             <div class="corner corner-tl"></div>
             <div class="corner corner-tr"></div>
             <div class="corner corner-bl"></div>
@@ -411,11 +1092,9 @@
                 <div id="target-display">TARGET: ALL</div>
             </div>
 
-            <!-- Объемный 3D-Риг Камеры -->
             <div class="camera-3d-rig" id="camera-rig">
                 <div class="rig-ring-outer"></div>
                 <div class="rig-ring-inner"></div>
-                
                 <div class="rig-body-cube">
                     <div class="laser-beam-3d"></div>
                     <div class="rig-lens-barrel"></div>
@@ -423,10 +1102,9 @@
                 </div>
             </div>
 
-            <h1>Fast QR Scanner</h1>
+            <h1>PULSE SCANNER</h1>
             <p class="subtitle">Параллельный залп по сокетам (&lt;0.1s)</p>
 
-            <!-- Селектор: Поток vs Моя группа -->
             <div class="mode-toggle-container">
                 <button class="toggle-btn active" id="btn-flow" onclick="selectMode('FLOW')">
                     🌊 Поток
@@ -436,7 +1114,6 @@
                 </button>
             </div>
 
-            <!-- Кнопка камеры (Нативный Telegram QR Popup) -->
             <button class="cyber-btn" onclick="startScanner()">
                 <svg viewBox="0 0 24 24">
                     <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
@@ -445,6 +1122,106 @@
             </button>
         </div>
     </div>
+
+    
+    <!-- Вкладка: РАСПИСАНИЕ -->
+    <div id="schedule-view-container">
+        <div class="sched-topbar">
+            <!-- Выбор группы (в строгом порядке 01, 02, 03, 04) -->
+            <div class="sched-group-picker" id="sched-group-picker">
+                <button class="group-chip active" onclick="selectSchedGroup('УИБО-01-24')">УИБО-01-24</button>
+                <button class="group-chip" onclick="selectSchedGroup('УИБО-02-24')">УИБО-02-24</button>
+                <button class="group-chip" onclick="selectSchedGroup('УИБО-03-24')">УИБО-03-24</button>
+                <button class="group-chip" onclick="selectSchedGroup('УИБО-04-24')">УИБО-04-24</button>
+            </div>
+
+            <!-- Управление неделей и днями -->
+            <div class="sched-controls-row">
+                <div class="parity-toggle">
+                    <button class="parity-btn active" id="btn-week-curr" onclick="setWeekView('current')">Текущая</button>
+                    <button class="parity-btn" id="btn-week-next" onclick="setWeekView('next')">Следующая</button>
+                </div>
+                <div style="font-size:11.5px; color:rgba(255,255,255,0.5); font-weight:600;" id="sched-week-label">
+                    Сегодня
+                </div>
+            </div>
+
+            <!-- Дни недели -->
+            <div class="days-bar">
+                <button class="day-tab" onclick="setDay(0)">ПН</button>
+                <button class="day-tab" onclick="setDay(1)">ВТ</button>
+                <button class="day-tab" onclick="setDay(2)">СР</button>
+                <button class="day-tab" onclick="setDay(3)">ЧТ</button>
+                <button class="day-tab" onclick="setDay(4)">ПТ</button>
+                <button class="day-tab" onclick="setDay(5)">СБ</button>
+            </div>
+        </div>
+
+        <div class="sched-list" id="sched-list">
+            <!-- Динамические карточки пар -->
+        </div>
+    </div>
+
+    <!-- Вкладка 2: КАРТА КОРПУСОВ -->
+    <div id="map-view-container">
+        <div class="map-topbar">
+            <div class="campus-picker">
+                <button class="campus-btn active" id="btn-campus-v78" onclick="selectCampus('v78')">
+                    🏢 В-78
+                </button>
+                <button class="campus-btn" id="btn-campus-mp1" onclick="selectCampus('mp1')">
+                    🏛 МП-1
+                </button>
+            </div>
+            <div class="map-search-wrapper">
+                <input type="text" id="map-search-input" placeholder="🔍 Найти аудиторию (А-142, Буфет...)" autocomplete="off">
+                <div id="map-search-results" class="map-search-dropdown"></div>
+            </div>
+        </div>
+
+        <div id="map-viewport">
+            <svg id="map-svg">
+                <g id="map-world">
+                    <g id="layer-areas"></g>
+                    <g id="layer-lines"></g>
+                    <g id="layer-labels"></g>
+                    <g id="layer-highlight"></g>
+                </g>
+            </svg>
+        </div>
+
+        <div class="floor-selector" id="floor-selector"></div>
+
+        <div class="map-controls">
+            <button class="ctrl-btn" onclick="zoomMap(1.35)" title="Приблизить">➕</button>
+            <button class="ctrl-btn" onclick="zoomMap(0.74)" title="Отдалить">➖</button>
+            <button class="ctrl-btn" onclick="resetMapView()" title="По центру">🎯</button>
+        </div>
+
+        <div id="room-card" class="room-info-card">
+            <div class="room-card-header">
+                <span id="room-card-title">Аудитория</span>
+                <button class="room-card-close" onclick="closeRoomCard()">✕</button>
+            </div>
+            <div id="room-card-sub" class="room-card-sub">В-78 · Этаж 1</div>
+        </div>
+    </div>
+
+    <!-- НАВИГАЦИОННЫЙ ТАБ-БАР -->
+    <nav class="bottom-nav">
+        <button class="nav-tab active" id="tab-scanner" onclick="switchTab('scanner')">
+            <span class="nav-icon">⚡</span>
+            <span class="nav-text">Сканер</span>
+        </button>
+        <button class="nav-tab" id="tab-sched" onclick="switchTab('sched')">
+            <span class="nav-icon">📅</span>
+            <span class="nav-text">Пары</span>
+        </button>
+        <button class="nav-tab" id="tab-map" onclick="switchTab('map')">
+            <span class="nav-icon">🗺</span>
+            <span class="nav-text">Карта</span>
+        </button>
+    </nav>
 
     <script>
         const tg = window.Telegram?.WebApp;
@@ -456,10 +1233,363 @@
             }
         }
 
+        // ============ ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК (СКАНИРОВАНИЕ / КАРТА) ============
+        let activeMainTab = 'scanner';
+        function switchTab(tab) {
+            activeMainTab = tab;
+            playSciFiBeep(820, 0.05);
+            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+
+            const hudScene = document.getElementById('hud-scene');
+            const mapView = document.getElementById('map-view-container');
+            const schedView = document.getElementById('schedule-view-container');
+
+            const tabScan = document.getElementById('tab-scanner');
+            const tabSched = document.getElementById('tab-sched');
+            const tabMap = document.getElementById('tab-map');
+
+            // Скрываем все экраны
+            hudScene.style.display = 'none';
+            mapView.style.display = 'none';
+            schedView.style.display = 'none';
+
+            tabScan.classList.remove('active');
+            tabSched.classList.remove('active');
+            tabMap.classList.remove('active');
+
+            if (tab === 'map') {
+                mapView.style.display = 'flex';
+                tabMap.classList.add('active');
+                if (!mapInitialized) initMap();
+            } else if (tab === 'sched') {
+                schedView.style.display = 'flex';
+                tabSched.classList.add('active');
+                if (!schedInitialized) initSchedule();
+            } else {
+                hudScene.style.display = 'block';
+                tabScan.classList.add('active');
+            }
+        }
+
+        // =========================================================================
+        // ============ ДВИЖОК РАСПИСАНИЯ С ПЕРЕХОДОМ НА КАРТУ ====================
+        // =========================================================================
+        let schedInitialized = false;
+        let currentGroup = localStorage.getItem('selected_sched_group') || 'УИБО-01-24';
+        let currentDayIdx = (new Date().getDay() + 6) % 7; // 0=ПН .. 6=ВС
+        if (currentDayIdx === 6) currentDayIdx = 0; // Воскресенье -> ПН
+
+        // Расчет текущей недели семестра (старт 31 авг 2026)
+        const semStart = new Date(2026, 7, 31);
+        const nowMs = Date.now();
+        const curWeekNum = Math.max(1, Math.floor((nowMs - semStart.getTime()) / (7 * 24 * 3600 * 1000)) + 1);
+        
+        // Режим просмотра: 'current' (текущая) или 'next' (следующая)
+        let activeWeekMode = 'current';
+
+        function getActiveWeekNum() {
+            return activeWeekMode === 'current' ? curWeekNum : (curWeekNum + 1);
+        }
+
+        function getActiveParity() {
+            return (getActiveWeekNum() % 2 === 1) ? 'odd' : 'even';
+        }
+
+        function initSchedule() {
+            schedInitialized = true;
+            updateGroupChips();
+            updateWeekUI();
+            updateDayTabs();
+            renderSchedule();
+        }
+
+        function selectSchedGroup(grp) {
+            currentGroup = grp;
+            localStorage.setItem('selected_sched_group', grp);
+            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            updateGroupChips();
+            renderSchedule();
+        }
+
+        function updateGroupChips() {
+            document.querySelectorAll('.group-chip').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.trim() === currentGroup);
+            });
+        }
+
+        function setWeekView(mode) {
+            activeWeekMode = mode;
+            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            updateWeekUI();
+            renderSchedule();
+        }
+
+        function updateWeekUI() {
+            const btnCurr = document.getElementById('btn-week-curr');
+            const btnNext = document.getElementById('btn-week-next');
+            if (btnCurr) btnCurr.classList.toggle('active', activeWeekMode === 'current');
+            if (btnNext) btnNext.classList.toggle('active', activeWeekMode === 'next');
+
+            const wNum = getActiveWeekNum();
+            const parityName = (wNum % 2 === 1) ? 'нечётная' : 'чётная';
+            const labelEl = document.getElementById('sched-week-label');
+            if (labelEl) {
+                labelEl.innerText = `${wNum} неделя (${parityName})`;
+            }
+        }
+
+        function setDay(dayIdx) {
+            currentDayIdx = dayIdx;
+            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            updateDayTabs();
+            renderSchedule();
+        }
+
+        function updateDayTabs() {
+            document.querySelectorAll('.day-tab').forEach((tab, idx) => {
+                tab.classList.toggle('active', idx === currentDayIdx);
+            });
+        }
+
+        function renderSchedule() {
+            const list = document.getElementById('sched-list');
+            list.innerHTML = '';
+
+            const allLessons = window.MIREA_SCHEDULE?.[currentGroup] || [];
+            const activeParity = getActiveParity();
+            // Фильтр по выбранному дню и четности активной недели (текущая/следующая)
+            const filtered = allLessons.filter(l => l.day === currentDayIdx && (l.parity === activeParity || l.parity === 'all'));
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="empty-sched-msg">✨ В этот день пар нет, можно отдохнуть!</div>';
+                return;
+            }
+
+            // Функция парсинга времени "10:30" в минуты от начала суток
+            function timeToMinutes(str) {
+                if (!str) return 0;
+                const [h, m] = str.split(':').map(Number);
+                return h * 60 + m;
+            }
+
+            // Текущее реальное время устройства
+            const now = new Date();
+            const todayDayIdx = (now.getDay() + 6) % 7;
+            const nowMinutes = now.getHours() * 60 + now.getMinutes();
+            // Подсветка активна только если выбран СЕГОДНЯШНИЙ день на ТЕКУЩЕЙ неделе
+            const isTodayActive = (activeWeekMode === 'current' && currentDayIdx === todayDayIdx);
+
+            filtered.forEach((lesson, idx) => {
+                const [tStartStr, tEndStr] = (lesson.time || '').split('-').map(s => s.trim());
+                const lStartMin = timeToMinutes(tStartStr);
+                const lEndMin = timeToMinutes(tEndStr);
+
+                // Если это не первая пара — проверяем перерыв с предыдущей парой
+                if (idx > 0) {
+                    const prevLesson = filtered[idx - 1];
+                    const prevEndStr = (prevLesson.time || '').split('-')[1]?.trim();
+                    const prevEndMin = timeToMinutes(prevEndStr);
+
+                    if (prevEndMin && lStartMin) {
+                        const diffMin = lStartMin - prevEndMin;
+                        if (diffMin > 0) {
+                            const isBreakNow = isTodayActive && (nowMinutes >= prevEndMin && nowMinutes < lStartMin);
+
+                            const breakDiv = document.createElement('div');
+                            breakDiv.className = 'lesson-break-divider';
+                            const isLong = diffMin >= 30;
+                            let badgeCls = isLong ? 'lesson-break-badge break-long' : 'lesson-break-badge';
+                            if (isBreakNow) badgeCls += ' is-current-break';
+
+                            const icon = isBreakNow ? '🟢' : (isLong ? '☕' : '⏱');
+
+                            let breakText = '';
+                            if (diffMin >= 60) {
+                                const hrs = Math.floor(diffMin / 60);
+                                const mins = diffMin % 60;
+                                breakText = `Окно ${hrs} ч ${mins > 0 ? mins + ' мин' : ''}`;
+                            } else {
+                                breakText = `Перерыв ${diffMin} мин`;
+                            }
+
+                            if (isBreakNow) {
+                                breakText += ' (сейчас)';
+                            }
+
+                            breakDiv.innerHTML = `
+                                <div class="lesson-break-line"></div>
+                                <div class="${badgeCls}">
+                                    <span>${icon}</span>
+                                    <span>${breakText}</span>
+                                </div>
+                                <div class="lesson-break-line"></div>
+                            `;
+                            list.appendChild(breakDiv);
+                        }
+                    }
+                }
+
+                // Проверяем, идет ли эта пара прямо сейчас
+                const isLessonNow = isTodayActive && (nowMinutes >= lStartMin && nowMinutes < lEndMin);
+
+                const card = document.createElement('div');
+                card.className = isLessonNow ? 'lesson-card is-current-now' : 'lesson-card';
+
+                let badgeCls = 'badge-pr';
+                const t = (lesson.type || '').toUpperCase();
+                if (t === 'ЛК') badgeCls = 'badge-lk';
+                else if (t === 'ЛАБ') badgeCls = 'badge-lab';
+                else if (t === 'СР') badgeCls = 'badge-sr';
+
+                const teacherHtml = lesson.teacher ? `<span class="lesson-teacher">👤 ${lesson.teacher}</span>` : '<span></span>';
+
+                let roomBtnHtml = '';
+                const rLower = (lesson.room || '').toLowerCase();
+                const tLower = (lesson.title || '').toLowerCase();
+                const isMilitaryOrDept = rLower.includes('кафедра') || rLower.includes('вуц') || rLower.includes('у-7') || tLower.includes('военн');
+
+                if (lesson.room && !isMilitaryOrDept) {
+                    roomBtnHtml = `
+                        <button class="room-tag-btn" onclick="goToRoomOnMap('${lesson.room}', '${lesson.campus}')">
+                            <span class="room-icon">📍</span>
+                            <span>${lesson.room}</span>
+                        </button>
+                    `;
+                } else if (lesson.room) {
+                    // Статичная надпись без клика и перехода на карту
+                    roomBtnHtml = `<span style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.5); padding: 5px 10px; background: rgba(255,255,255,0.05); border-radius: 10px;">🏢 ${lesson.room}</span>`;
+                }
+
+                const liveTagHtml = isLessonNow ? `<span class="current-live-tag"><span class="live-dot"></span>СЕЙЧАС</span>` : '';
+
+                card.innerHTML = `
+                    <div class="lesson-header">
+                        <div class="lesson-num-time">
+                            ${liveTagHtml}
+                            <span>${lesson.pairNum}</span>
+                            <span>·</span>
+                            <span>${lesson.time}</span>
+                        </div>
+                        <span class="lesson-badge ${badgeCls}">${lesson.type || 'Пара'}</span>
+                    </div>
+                    <div class="lesson-title">${lesson.title}</div>
+                    <div class="lesson-footer">
+                        ${teacherHtml}
+                        ${roomBtnHtml}
+                    </div>
+                `;
+
+                list.appendChild(card);
+            });
+        }
+
+        // ============ ПЕРЕХОД НА КАРТУ ПРИ КЛИКЕ НА КАБИНЕТ ============
+        
+        // Автообновление расписания каждую минуту для актуализации плашки "СЕЙЧАС"
+        setInterval(() => {
+            if (activeMainTab === 'sched' && schedInitialized) {
+                renderSchedule();
+            }
+        }, 60000);
+
+        function goToRoomOnMap(roomCode, campusHint) {
+            playSciFiBeep(940, 0.08);
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
+            // 1. Переключаем на таб карты
+            switchTab('map');
+
+            // 2. Выбираем правильный корпус
+            const campus = (campusHint === 'mp1' || roomCode.includes('МП')) ? 'mp1' : 'v78';
+            selectCampus(campus);
+
+            const campusData = window.MIREA_MAPS?.[campus] || {};
+            const cleanTarget = roomCode.trim().toLowerCase();
+            const normTarget = cleanTarget.replace(/[^a-zа-я0-9]/g, '');
+
+            let found = null;
+
+            // Этап 1: СТРОГОЕ точное совпадение (например, "А-17" === "А-17", а не "А-173")
+            for (const [flNum, flData] of Object.entries(campusData)) {
+                const verts = flData.v || {};
+                for (const a of (flData.a || [])) {
+                    const name = (a.n || '').trim().toLowerCase();
+                    if (name === cleanTarget) {
+                        const pts = (a.v || []).map(vid => verts[vid]).filter(Boolean);
+                        if (pts.length >= 3) {
+                            const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
+                            const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
+                            found = { floor: flNum, cx, cy, pts, area: a };
+                            break;
+                        }
+                    }
+                }
+                if (found) break;
+            }
+
+            // Этап 2: Нормализованное точное совпадение (игнорируя тире и пробелы)
+            if (!found) {
+                for (const [flNum, flData] of Object.entries(campusData)) {
+                    const verts = flData.v || {};
+                    for (const a of (flData.a || [])) {
+                        const name = (a.n || '').trim().toLowerCase();
+                        const normName = name.replace(/[^a-zа-я0-9]/g, '');
+                        if (normName === normTarget) {
+                            const pts = (a.v || []).map(vid => verts[vid]).filter(Boolean);
+                            if (pts.length >= 3) {
+                                const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
+                                const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
+                                found = { floor: flNum, cx, cy, pts, area: a };
+                                break;
+                            }
+                        }
+                    }
+                    if (found) break;
+                }
+            }
+
+            // Этап 3: Точное совпадение как отдельного токена в списке (например "ИВЦ-105, ИВЦ-105.1")
+            if (!found) {
+                for (const [flNum, flData] of Object.entries(campusData)) {
+                    const verts = flData.v || {};
+                    for (const a of (flData.a || [])) {
+                        const name = (a.n || '').trim().toLowerCase();
+                        const tokens = name.split(/[,;/ ]+/).map(t => t.trim());
+                        if (tokens.includes(cleanTarget)) {
+                            const pts = (a.v || []).map(vid => verts[vid]).filter(Boolean);
+                            if (pts.length >= 3) {
+                                const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
+                                const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
+                                found = { floor: flNum, cx, cy, pts, area: a };
+                                break;
+                            }
+                        }
+                    }
+                    if (found) break;
+                }
+            }
+
+            if (found) {
+                // Переключаем этаж
+                if (currentFloor !== found.floor) {
+                    selectFloor(found.floor);
+                }
+                // Фокусируем камеру и подсвечиваем точный кабинет
+                setTimeout(() => {
+                    focusOnCoords(found.cx, found.cy);
+                    showRoomDetails(found.area, found.pts);
+                }, 120);
+            } else {
+                // Если номера нет в геометрии (например военная кафедра) — заносим в поиск
+                searchInput.value = roomCode;
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        }
+
+
         let currentMode = localStorage.getItem('qr_target_mode') || 'FLOW';
         if (currentMode === 'ALL') currentMode = 'FLOW';
 
-        // ============ ЗВУКОВОЙ ДВИЖОК ============
         function playSciFiBeep(freq = 880, duration = 0.08) {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -498,7 +1628,7 @@
             localStorage.setItem('qr_target_mode', mode);
             playSciFiBeep(750, 0.06);
             if (tg?.HapticFeedback) {
-                tg.HapticFeedback.selectionChanged();
+                tg.HapticFeedback.impactOccurred('light');
             }
             updateUI();
         }
@@ -540,112 +1670,553 @@
         function resizeCanvas() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            initParticles();
         }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
         function initParticles() {
             particles = [];
-            const count = Math.floor(width < 600 ? 25 : 40);
+            const count = Math.floor(width * 0.055);
             for (let i = 0; i < count; i++) {
                 particles.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
-                    size: Math.random() * 2 + 0.8,
-                    speedY: Math.random() * 0.35 + 0.15,
-                    speedX: (Math.random() - 0.5) * 0.15,
-                    alpha: Math.random() * 0.6 + 0.2
+                    size: Math.random() * 2.2 + 0.5,
+                    speedX: (Math.random() - 0.5) * 0.45,
+                    speedY: -Math.random() * 0.85 - 0.25,
+                    alpha: Math.random() * 0.6 + 0.2,
+                    color: Math.random() > 0.45 ? '#c084fc' : '#38bdf8'
                 });
             }
         }
+        initParticles();
 
         function drawBackground() {
             ctx.clearRect(0, 0, width, height);
 
-            gridOffset = (gridOffset + 0.3) % 40;
-            ctx.strokeStyle = 'rgba(147, 51, 234, 0.07)';
+            gridOffset = (gridOffset + 0.25) % 45;
+            ctx.strokeStyle = 'rgba(192, 132, 252, 0.04)';
             ctx.lineWidth = 1;
 
             ctx.beginPath();
-            for (let x = 0; x <= width; x += 40) {
+            for (let x = 0; x < width; x += 45) {
                 ctx.moveTo(x, 0);
                 ctx.lineTo(x, height);
             }
-            for (let y = gridOffset; y <= height; y += 40) {
+            for (let y = gridOffset; y < height; y += 45) {
                 ctx.moveTo(0, y);
                 ctx.lineTo(width, y);
             }
             ctx.stroke();
 
-            for (let i = 0; i < particles.length; i++) {
-                const p = particles[i];
-                p.y -= p.speedY;
+            for (let p of particles) {
                 p.x += p.speedX;
+                p.y += p.speedY;
+                if (p.y < 0) {
+                    p.y = height + 10;
+                    p.x = Math.random() * width;
+                }
+                if (p.x < 0) p.x = width;
+                if (p.x > width) p.x = 0;
 
-                if (p.y < -10) p.y = height + 10;
-                if (p.x < -10) p.x = width + 10;
-                if (p.x > width + 10) p.x = -10;
-
-                ctx.fillStyle = `rgba(192, 132, 252, ${p.alpha})`;
-                ctx.shadowColor = '#c084fc';
-                ctx.shadowBlur = 6;
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = p.size * 3.5;
+                ctx.shadowColor = p.color;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.restore();
             }
-            ctx.shadowBlur = 0;
 
             requestAnimationFrame(drawBackground);
         }
-
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
         requestAnimationFrame(drawBackground);
 
-        // ============ МГНОВЕННЫЙ 3D-ДВИЖОК С ПАССИВНЫМ ГИРОСКОПОМ ============
+        // ============ 3D ГИРОСКОП + ПАРАЛЛАКС ДЛЯ КАРТОЧКИ ============
         const hudScene = document.getElementById('hud-scene');
         const cameraRig = document.getElementById('camera-rig');
         const glare = document.getElementById('specular-glare');
 
-        let gyroX = 0;
-        let gyroY = 0;
+        let gyroX = 0, gyroY = 0;
+        let initialBeta = null, initialGamma = null;
 
-        // Пассивный сбор данных наклона без системных запросов разрешений
         window.addEventListener('deviceorientation', (e) => {
+            if (activeMainTab !== 'scanner') return;
             if (e.beta !== null && e.gamma !== null) {
-                const deltaBeta = Math.max(-30, Math.min(30, e.beta - 45));
-                const deltaGamma = Math.max(-30, Math.min(30, e.gamma));
+                if (initialBeta === null) {
+                    initialBeta = e.beta;
+                    initialGamma = e.gamma;
+                }
+                const deltaBeta = Math.max(-25, Math.min(25, e.beta - initialBeta));
+                const deltaGamma = Math.max(-25, Math.min(25, e.gamma - initialGamma));
                 gyroX = -deltaBeta * 0.35;
                 gyroY = deltaGamma * 0.45;
             }
         }, { passive: true });
 
-        // Автономное 3D вращение + наложение наклона
         function animate3DScene(now) {
-            const t = now * 0.001;
+            if (activeMainTab === 'scanner') {
+                const t = now * 0.001;
+                const cardRotX = Math.sin(t * 1.1) * 5.0 + gyroX;
+                const cardRotY = Math.cos(t * 0.85) * 6.5 + gyroY;
+                const cardFloatY = Math.sin(t * 1.4) * 5.0;
 
-            // Базовое парение + наклон
-            const cardRotX = Math.sin(t * 1.1) * 5.0 + gyroX;
-            const cardRotY = Math.cos(t * 0.85) * 6.5 + gyroY;
-            const cardFloatY = Math.sin(t * 1.4) * 5.0;
+                hudScene.style.transform = `translateY(${cardFloatY.toFixed(2)}px) rotateX(${cardRotX.toFixed(2)}deg) rotateY(${cardRotY.toFixed(2)}deg)`;
 
-            hudScene.style.transform = `translateY(${cardFloatY.toFixed(2)}px) rotateX(${cardRotX.toFixed(2)}deg) rotateY(${cardRotY.toFixed(2)}deg)`;
+                const camRotX = Math.sin(t * 1.6) * 12.0 - gyroX * 0.5;
+                const camRotY = Math.sin(t * 1.0) * 20.0 + gyroY * 0.5;
+                const camRollZ = Math.cos(t * 0.7) * 6.0;
 
-            // 3D-риг фотоаппарата
-            const camRotX = Math.sin(t * 1.6) * 12.0 - gyroX * 0.5;
-            const camRotY = Math.sin(t * 1.0) * 20.0 + gyroY * 0.5;
-            const camRollZ = Math.cos(t * 0.7) * 6.0;
+                cameraRig.style.transform = `rotateX(${camRotX.toFixed(2)}deg) rotateY(${camRotY.toFixed(2)}deg) rotateZ(${camRollZ.toFixed(2)}deg)`;
 
-            cameraRig.style.transform = `rotateX(${camRotX.toFixed(2)}deg) rotateY(${camRotY.toFixed(2)}deg) rotateZ(${camRollZ.toFixed(2)}deg)`;
-
-            // Световой блик
-            const glareX = 50 + Math.cos(t * 0.85) * 28.0 + gyroY * 1.5;
-            const glareY = 50 - Math.sin(t * 1.1) * 28.0 - gyroX * 1.5;
-            glare.style.background = `radial-gradient(circle at ${glareX.toFixed(1)}% ${glareY.toFixed(1)}%, rgba(255, 255, 255, 0.28) 0%, rgba(192, 132, 252, 0.06) 45%, transparent 75%)`;
-
+                const glareX = 50 + Math.cos(t * 0.85) * 28.0 + gyroY * 1.5;
+                const glareY = 50 - Math.sin(t * 1.1) * 28.0 - gyroX * 1.5;
+                glare.style.background = `radial-gradient(circle at ${glareX.toFixed(1)}% ${glareY.toFixed(1)}%, rgba(255, 255, 255, 0.28) 0%, rgba(192, 132, 252, 0.06) 45%, transparent 75%)`;
+            }
             requestAnimationFrame(animate3DScene);
         }
-
         requestAnimationFrame(animate3DScene);
+
+        // =========================================================================
+        // ============ ДВИЖОК АВТОНОМНОЙ КАРТЫ (В-78 И МП-1) =======================
+        // =========================================================================
+        let mapInitialized = false;
+        let currentCampus = 'v78';
+        let currentFloor = '1';
+        let currentBBox = { minX: 0, maxX: 1000, minY: 0, maxY: 1000, w: 1000, h: 1000 };
+
+        let scale = 1;
+        let tx = 0;
+        let ty = 0;
+
+        const mapWorld = document.getElementById('map-world');
+        const layerAreas = document.getElementById('layer-areas');
+        const layerLines = document.getElementById('layer-lines');
+        const layerLabels = document.getElementById('layer-labels');
+        const layerHighlight = document.getElementById('layer-highlight');
+        const viewport = document.getElementById('map-viewport');
+        const searchInput = document.getElementById('map-search-input');
+        const searchDropdown = document.getElementById('map-search-results');
+
+        function updateTransform() {
+            mapWorld.setAttribute('transform', `matrix(${scale}, 0, 0, ${scale}, ${tx}, ${ty})`);
+            updateLabelsLOD();
+        }
+
+        // Автоматическая фильтрация и масштабирование надписей при зуме
+        function updateLabelsLOD() {
+            // При отдалении скрываем подписи в крошечных комнатах, чтобы они не накладывались
+            const labels = layerLabels.children;
+            const isZoomedOut = scale < 0.045;
+            for (let i = 0; i < labels.length; i++) {
+                const el = labels[i];
+                const minDim = parseFloat(el.getAttribute('data-min-dim') || '500');
+                if (isZoomedOut && minDim < 260 && !el.classList.contains('label-wc')) {
+                    el.style.display = 'none';
+                } else {
+                    el.style.display = '';
+                }
+            }
+        }
+
+        function initMap() {
+            if (mapInitialized) return;
+            mapInitialized = true;
+            setupMapGestures();
+            setupSearch();
+            selectCampus('v78');
+        }
+
+        function selectCampus(campus) {
+            currentCampus = campus;
+            document.getElementById('btn-campus-v78').classList.toggle('active', campus === 'v78');
+            document.getElementById('btn-campus-mp1').classList.toggle('active', campus === 'mp1');
+
+            const floors = Object.keys(window.MIREA_MAPS?.[campus] || {}).sort((a,b) => Number(b) - Number(a));
+            const selector = document.getElementById('floor-selector');
+            selector.innerHTML = '';
+
+            floors.forEach(f => {
+                const btn = document.createElement('button');
+                btn.className = 'floor-btn';
+                btn.id = `floor-btn-${f}`;
+                btn.innerText = f;
+                btn.onclick = () => selectFloor(f);
+                selector.appendChild(btn);
+            });
+
+            // Выбираем 1 этаж по умолчанию (или первый доступный)
+            const defaultFloor = floors.includes('1') ? '1' : floors[0];
+            selectFloor(defaultFloor);
+        }
+
+        function selectFloor(floor) {
+            currentFloor = floor;
+            closeRoomCard();
+
+            document.querySelectorAll('.floor-btn').forEach(b => {
+                b.classList.toggle('active', b.id === `floor-btn-${floor}`);
+            });
+
+            renderFloor();
+        }
+
+        function renderFloor() {
+            const data = window.MIREA_MAPS?.[currentCampus]?.[currentFloor];
+            if (!data) return;
+
+            layerAreas.innerHTML = '';
+            layerLines.innerHTML = '';
+            layerLabels.innerHTML = '';
+            layerHighlight.innerHTML = '';
+
+            const verts = data.v || {};
+            const areas = data.a || [];
+            const lines = data.l || [];
+
+            // Расчет Bounding Box
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            for (const [x, y] of Object.values(verts)) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+
+            const pad = 300;
+            currentBBox = {
+                minX: minX - pad,
+                maxX: maxX + pad,
+                minY: minY - pad,
+                maxY: maxY + pad,
+                w: (maxX - minX) + pad * 2,
+                h: (maxY - minY) + pad * 2
+            };
+
+            // Отрисовка полигонов аудиторий
+            areas.forEach((a, idx) => {
+                const pts = (a.v || []).map(vid => verts[vid]).filter(Boolean);
+                if (pts.length >= 3) {
+                    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    poly.setAttribute('points', pts.map(p => `${p[0]},${p[1]}`).join(' '));
+                    
+                    let cls = 'map-area-poly';
+                    const name = a.n || '';
+                    if (name.includes('Туалет')) cls += ' type-toilet';
+                    else if (name.includes('Буфет') || name.includes('Столовая')) cls += ' type-food';
+                    else if (name.includes('Вход')) cls += ' type-entrance';
+                    
+                    poly.setAttribute('class', cls);
+                    poly.id = `area-${idx}`;
+
+                    poly.onclick = (e) => {
+                        e.stopPropagation();
+                        showRoomDetails(a, pts);
+                    };
+
+                    layerAreas.appendChild(poly);
+
+                    // Отрисовка адаптивных подписей с защитой от наложения
+                    if (name) {
+                        // Расчет габаритов полигона
+                        const xs = pts.map(p => p[0]);
+                        const ys = pts.map(p => p[1]);
+                        const minX = Math.min(...xs), maxX = Math.max(...xs);
+                        const minY = Math.min(...ys), maxY = Math.max(...ys);
+                        const roomW = maxX - minX;
+                        const roomH = maxY - minY;
+                        const minDim = Math.min(roomW, roomH);
+
+                        const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
+                        const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
+
+                        // Оптимизация текста для туалетов
+                        let displayLabel = name;
+                        let extraClass = '';
+                        if (name.includes('Туалет')) {
+                            extraClass = ' label-wc';
+                            if (name.includes('МЖ')) displayLabel = 'WC 🚻';
+                            else if (name.includes('Ж')) displayLabel = 'WC 🚺';
+                            else if (name.includes('М')) displayLabel = 'WC 🚹';
+                            else displayLabel = 'WC 🚻';
+                        } else if (name.includes('Буфет') || name.includes('Столовая')) {
+                            extraClass = ' label-food';
+                            displayLabel = '☕ ' + name;
+                        } else if (name.includes('Вход')) {
+                            extraClass = ' label-entrance';
+                        }
+
+                        // Сокращение слишком длинных названий
+                        if (displayLabel.length > 14 && !displayLabel.includes('WC')) {
+                            displayLabel = displayLabel.substring(0, 12) + '..';
+                        }
+
+                        // Динамический расчет размера шрифта под габариты помещения
+                        // При roomW = 200 шрифт уменьшается, при roomW = 800 увеличивается
+                        let targetFontSize = Math.min(105, Math.max(38, Math.floor(minDim * 0.28)));
+                        // Для длинного текста масштабируем под ширину комнаты
+                        const estTextLen = displayLabel.length * (targetFontSize * 0.58);
+                        if (estTextLen > roomW * 0.88) {
+                            targetFontSize = Math.max(34, Math.floor((roomW * 0.88) / (displayLabel.length * 0.58)));
+                        }
+
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', cx);
+                        text.setAttribute('y', cy);
+                        text.setAttribute('class', 'map-label-text' + extraClass);
+                        text.setAttribute('style', `font-size: ${targetFontSize}px;`);
+                        text.setAttribute('data-base-size', targetFontSize);
+                        text.setAttribute('data-min-dim', minDim);
+                        text.textContent = displayLabel;
+                        layerLabels.appendChild(text);
+                    }
+                }
+            });
+
+            // Отрисовка стен
+            lines.forEach(([v1, v2]) => {
+                const p1 = verts[v1];
+                const p2 = verts[v2];
+                if (p1 && p2) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', p1[0]);
+                    line.setAttribute('y1', p1[1]);
+                    line.setAttribute('x2', p2[0]);
+                    line.setAttribute('y2', p2[1]);
+                    line.setAttribute('class', 'map-wall-line');
+                    layerLines.appendChild(line);
+                }
+            });
+
+            resetMapView();
+        }
+
+        function resetMapView() {
+            const vw = viewport.clientWidth || window.innerWidth;
+            const vh = viewport.clientHeight || window.innerHeight;
+
+            const scaleX = vw / currentBBox.w;
+            const scaleY = vh / currentBBox.h;
+            scale = Math.min(scaleX, scaleY) * 0.92;
+
+            tx = (vw - currentBBox.w * scale) / 2 - currentBBox.minX * scale;
+            ty = (vh - currentBBox.h * scale) / 2 - currentBBox.minY * scale;
+
+            updateTransform();
+        }
+
+        function zoomMap(factor, cx = null, cy = null) {
+            const vw = viewport.clientWidth || window.innerWidth;
+            const vh = viewport.clientHeight || window.innerHeight;
+            const focusX = cx !== null ? cx : vw / 2;
+            const focusY = cy !== null ? cy : vh / 2;
+
+            const newScale = Math.max(0.005, Math.min(2.5, scale * factor));
+            tx = focusX - (focusX - tx) * (newScale / scale);
+            ty = focusY - (focusY - ty) * (newScale / scale);
+            scale = newScale;
+
+            updateTransform();
+        }
+
+        function showRoomDetails(area, pts) {
+            const card = document.getElementById('room-card');
+            const title = document.getElementById('room-card-title');
+            const sub = document.getElementById('room-card-sub');
+
+            title.innerText = area.n || 'Аудитория без названия';
+            const campusName = currentCampus === 'v78' ? 'Вернадского, 78' : 'М. Пироговская, 1';
+            sub.innerText = `${campusName} · Этаж ${currentFloor}`;
+            card.style.display = 'block';
+
+            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+
+            // Подсветка полигона
+            highlightPolygon(pts);
+        }
+
+        function highlightPolygon(pts) {
+            layerHighlight.innerHTML = '';
+            if (!pts || pts.length < 3) return;
+
+            const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            poly.setAttribute('points', pts.map(p => `${p[0]},${p[1]}`).join(' '));
+            poly.setAttribute('class', 'map-area-poly highlighted');
+            layerHighlight.appendChild(poly);
+        }
+
+        function closeRoomCard() {
+            document.getElementById('room-card').style.display = 'none';
+            layerHighlight.innerHTML = '';
+        }
+
+        // ============ УПРАВЛЕНИЕ ЖЕСТАМИ (PAN & PINCH TO ZOOM) ============
+        function setupMapGestures() {
+            let isDragging = false;
+            let lastMouseX = 0, lastMouseY = 0;
+            let initialDistance = 0;
+            let initialScale = 1;
+            let initialTouchCenter = { x: 0, y: 0 };
+            let lastTapTime = 0;
+
+            // Мышь
+            viewport.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.map-topbar') || e.target.closest('.floor-selector') || e.target.closest('.map-controls')) return;
+                isDragging = true;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                tx += e.clientX - lastMouseX;
+                ty += e.clientY - lastMouseY;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                updateTransform();
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            viewport.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const factor = e.deltaY < 0 ? 1.18 : 0.85;
+                zoomMap(factor, e.clientX, e.clientY);
+            }, { passive: false });
+
+            // Сенсорные экраны (Смартфоны)
+            viewport.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    lastMouseX = e.touches[0].clientX;
+                    lastMouseY = e.touches[0].clientY;
+
+                    // Двойной тап для приближения
+                    const now = Date.now();
+                    if (now - lastTapTime < 300) {
+                        zoomMap(1.8, e.touches[0].clientX, e.touches[0].clientY);
+                    }
+                    lastTapTime = now;
+                } else if (e.touches.length === 2) {
+                    isDragging = false;
+                    initialDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    initialScale = scale;
+                    initialTouchCenter = {
+                        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                        y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+                    };
+                }
+            }, { passive: true });
+
+            viewport.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && isDragging) {
+                    tx += e.touches[0].clientX - lastMouseX;
+                    ty += e.touches[0].clientY - lastMouseY;
+                    lastMouseX = e.touches[0].clientX;
+                    lastMouseY = e.touches[0].clientY;
+                    updateTransform();
+                } else if (e.touches.length === 2) {
+                    const dist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    const factor = dist / initialDistance;
+                    const newScale = Math.max(0.005, Math.min(2.5, initialScale * factor));
+
+                    tx = initialTouchCenter.x - (initialTouchCenter.x - tx) * (newScale / scale);
+                    ty = initialTouchCenter.y - (initialTouchCenter.y - ty) * (newScale / scale);
+                    scale = newScale;
+
+                    updateTransform();
+                }
+            }, { passive: true });
+
+            viewport.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+        }
+
+        // ============ ПОИСК АУДИТОРИЙ ============
+        function setupSearch() {
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                if (!query) {
+                    searchDropdown.style.display = 'none';
+                    return;
+                }
+
+                const campusData = window.MIREA_MAPS?.[currentCampus] || {};
+                const matches = [];
+
+                for (const [flNum, flData] of Object.entries(campusData)) {
+                    const verts = flData.v || {};
+                    (flData.a || []).forEach(a => {
+                        const name = a.n || '';
+                        if (name.toLowerCase().includes(query)) {
+                            const pts = (a.v || []).map(vid => verts[vid]).filter(Boolean);
+                            if (pts.length >= 3) {
+                                const cx = pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
+                                const cy = pts.reduce((sum, p) => sum + p[1], 0) / pts.length;
+                                matches.push({
+                                    name,
+                                    floor: flNum,
+                                    cx, cy, pts, area: a
+                                });
+                            }
+                        }
+                    });
+                }
+
+                if (matches.length === 0) {
+                    searchDropdown.style.display = 'none';
+                    return;
+                }
+
+                searchDropdown.innerHTML = '';
+                matches.slice(0, 15).forEach(m => {
+                    const item = document.createElement('div');
+                    item.className = 'search-item';
+                    item.innerHTML = `<span>${m.name}</span><span class="search-item-floor">Этаж ${m.floor}</span>`;
+                    item.onclick = () => {
+                        searchInput.value = m.name;
+                        searchDropdown.style.display = 'none';
+                        if (currentFloor !== m.floor) {
+                            selectFloor(m.floor);
+                        }
+                        // Центрирование и подсветка
+                        focusOnCoords(m.cx, m.cy);
+                        showRoomDetails(m.area, m.pts);
+                    };
+                    searchDropdown.appendChild(item);
+                });
+
+                searchDropdown.style.display = 'block';
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.map-search-wrapper')) {
+                    searchDropdown.style.display = 'none';
+                }
+            });
+        }
+
+        function focusOnCoords(targetX, targetY) {
+            const vw = viewport.clientWidth || window.innerWidth;
+            const vh = viewport.clientHeight || window.innerHeight;
+
+            scale = 0.28; // Увеличенный фокусный зум для аудитории
+            tx = vw / 2 - targetX * scale;
+            ty = vh / 2 - targetY * scale;
+
+            updateTransform();
+        }
 
         window.onload = () => {
             updateUI();

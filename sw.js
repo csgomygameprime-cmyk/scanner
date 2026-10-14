@@ -1,8 +1,10 @@
-const CACHE_NAME = 'pulse-scanner-v1';
+const CACHE_NAME = 'pulse-scanner-v3';
 const ASSETS = [
     './',
     './index.html',
     './manifest.json',
+    './maps_data.js',
+    './schedule_data.js',
     'https://telegram.org/js/telegram-web-app.js'
 ];
 
