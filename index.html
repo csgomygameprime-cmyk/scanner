@@ -1754,6 +1754,15 @@
             // Подсветка активна только если выбран СЕГОДНЯШНИЙ день на ТЕКУЩЕЙ неделе
             const isTodayActive = (activeWeekNumber === curWeekNum && currentDayIdx === todayDayIdx);
 
+            // Расчет точной даты для выбранного дня и недели
+            const semStart = new Date(2026, 7, 31);
+            const cardDate = new Date(semStart);
+            cardDate.setDate(semStart.getDate() + (activeWeekNumber - 1) * 7 + currentDayIdx);
+            const yStr = cardDate.getFullYear();
+            const mStr = String(cardDate.getMonth() + 1).padStart(2, '0');
+            const dStr = String(cardDate.getDate()).padStart(2, '0');
+            const dateIso = `${yStr}-${mStr}-${dStr}`;
+
             filtered.forEach((lesson, idx) => {
                 const [tStartStr, tEndStr] = (lesson.time || '').split('-').map(s => s.trim());
                 const lStartMin = timeToMinutes(tStartStr);
@@ -1862,7 +1871,7 @@
                     <div class="lesson-footer">
                         ${teacherHtml}
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <button class="journal-tag-btn" onclick="requestLessonJournal('${lesson.pairNum}', '${lesson.time}', '${lesson.title.replace(/'/g, "\\'")}')">
+                            <button class="journal-tag-btn" onclick="requestLessonJournal('${lesson.pairNum}', '${lesson.time}', '${lesson.title.replace(/'/g, "\\'")}', '${dateIso}')">
                                 <span>👥</span>
                                 <span>Журнал</span>
                             </button>
@@ -1885,7 +1894,7 @@
         }, 60000);
 
         
-        function requestLessonJournal(pairNum, time, title) {
+        function requestLessonJournal(pairNum, time, title, dateIso) {
             playSciFiBeep(920, 0.08);
             if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
@@ -1895,7 +1904,8 @@
                     group: currentGroup,
                     pairNum: pairNum,
                     time: time,
-                    title: title
+                    title: title,
+                    date: dateIso || ''
                 });
                 tg.sendData(payload);
                 tg.close();
