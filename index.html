@@ -833,30 +833,60 @@
         .days-bar {
             display: flex;
             justify-content: space-between;
-            gap: 4px;
+            gap: 5px;
             width: 100%;
         }
 
         .day-tab {
             flex: 1;
-            padding: 8px 0;
+            padding: 7px 0 6px;
             text-align: center;
-            border-radius: 12px;
-            border: 1px solid transparent;
-            background: rgba(255, 255, 255, 0.04);
+            border-radius: 14px;
+            border: 1px solid rgba(192, 132, 252, 0.15);
+            background: rgba(255, 255, 255, 0.03);
             color: rgba(255, 255, 255, 0.55);
-            font-size: 12px;
-            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
             -webkit-tap-highlight-color: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            position: relative;
+        }
+
+        .day-tab-name {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .day-tab-num {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: #ffffff;
         }
 
         .day-tab.active {
-            background: rgba(192, 132, 252, 0.2);
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.45), rgba(56, 189, 248, 0.25));
             border-color: var(--neon-cyan);
             color: #ffffff;
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+        }
+
+        .day-tab.active .day-tab-name {
+            color: var(--neon-cyan);
+        }
+
+        /* Синяя неоновая точка под сегодняшним днем (как на Пульсе) */
+        .day-today-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: var(--neon-cyan);
+            box-shadow: 0 0 6px var(--neon-cyan);
+            margin-top: -1px;
         }
 
         .sched-list {
@@ -1070,6 +1100,37 @@
             font-weight: 600;
         }
 
+    
+        /* ============ МОДУЛЬ СТАТУСА И СКУД ============ */
+        #status-view-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            box-sizing: border-box;
+            background-color: var(--bg-dark);
+            overflow-y: auto;
+        }
+
+        .status-icon-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.3), transparent 70%);
+            border: 2px dashed rgba(56, 189, 248, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            animation: spinRigOuter 20s linear infinite;
+        }
+
     </style>
 </head>
 <body>
@@ -1146,14 +1207,9 @@
                 </div>
             </div>
 
-            <!-- Дни недели -->
-            <div class="days-bar">
-                <button class="day-tab" onclick="setDay(0)">ПН</button>
-                <button class="day-tab" onclick="setDay(1)">ВТ</button>
-                <button class="day-tab" onclick="setDay(2)">СР</button>
-                <button class="day-tab" onclick="setDay(3)">ЧТ</button>
-                <button class="day-tab" onclick="setDay(4)">ПТ</button>
-                <button class="day-tab" onclick="setDay(5)">СБ</button>
+            <!-- Календарная полоска дней с числами месяца -->
+            <div class="days-bar" id="days-bar">
+                <!-- Генерируется динамически с датами -->
             </div>
         </div>
 
@@ -1207,6 +1263,50 @@
         </div>
     </div>
 
+    
+    <!-- Вкладка 4: СТАТУС АККАУНТОВ И СКУД -->
+    <div id="status-view-container">
+        <div class="hud-scene" style="margin-bottom:0;">
+            <div class="hud-card">
+                <div class="card-specular-glare"></div>
+                <div class="corner corner-tl"></div>
+                <div class="corner corner-tr"></div>
+                <div class="corner corner-bl"></div>
+                <div class="corner corner-br"></div>
+
+                <div class="top-telemetry">
+                    <div><span class="status-dot"></span>SYS_SECURE</div>
+                    <div id="status-target-display">TARGET: FLOW</div>
+                </div>
+
+                <div class="status-icon-ring">
+                    <span style="font-size:36px; filter: drop-shadow(0 0 10px #38bdf8);">🩺</span>
+                </div>
+
+                <h1 style="font-size: 20px; margin-bottom: 4px;">СТАТУС И СКУД</h1>
+                <p class="subtitle" style="margin-bottom: 16px;">gRPC проверка токенов и турникетов</p>
+
+                <!-- Выбор области проверки -->
+                <div class="mode-toggle-container">
+                    <button class="toggle-btn active" id="btn-status-flow" onclick="selectStatusMode('FLOW')">
+                        🌊 Поток
+                    </button>
+                    <button class="toggle-btn" id="btn-status-group" onclick="selectStatusMode('MY_GROUP')">
+                        👥 Моя группа
+                    </button>
+                </div>
+
+                <!-- Главная кнопка проверки -->
+                <button class="cyber-btn" id="btn-run-check" onclick="startStatusCheck()">
+                    <span style="font-size:18px;">🩺</span>
+                    <span>Запустить опрос СКУД</span>
+                </button>
+
+
+            </div>
+        </div>
+    </div>
+
     <!-- НАВИГАЦИОННЫЙ ТАБ-БАР -->
     <nav class="bottom-nav">
         <button class="nav-tab active" id="tab-scanner" onclick="switchTab('scanner')">
@@ -1220,6 +1320,10 @@
         <button class="nav-tab" id="tab-map" onclick="switchTab('map')">
             <span class="nav-icon">🗺</span>
             <span class="nav-text">Карта</span>
+        </button>
+        <button class="nav-tab" id="tab-status" onclick="switchTab('status')">
+            <span class="nav-icon">🩺</span>
+            <span class="nav-text">Статус</span>
         </button>
     </nav>
 
@@ -1243,19 +1347,23 @@
             const hudScene = document.getElementById('hud-scene');
             const mapView = document.getElementById('map-view-container');
             const schedView = document.getElementById('schedule-view-container');
+            const statusView = document.getElementById('status-view-container');
 
             const tabScan = document.getElementById('tab-scanner');
             const tabSched = document.getElementById('tab-sched');
             const tabMap = document.getElementById('tab-map');
+            const tabStatus = document.getElementById('tab-status');
 
             // Скрываем все экраны
             hudScene.style.display = 'none';
             mapView.style.display = 'none';
             schedView.style.display = 'none';
+            statusView.style.display = 'none';
 
             tabScan.classList.remove('active');
             tabSched.classList.remove('active');
             tabMap.classList.remove('active');
+            tabStatus.classList.remove('active');
 
             if (tab === 'map') {
                 mapView.style.display = 'flex';
@@ -1265,9 +1373,63 @@
                 schedView.style.display = 'flex';
                 tabSched.classList.add('active');
                 if (!schedInitialized) initSchedule();
+            } else if (tab === 'status') {
+                statusView.style.display = 'flex';
+                tabStatus.classList.add('active');
+                updateStatusUI();
             } else {
                 hudScene.style.display = 'block';
                 tabScan.classList.add('active');
+            }
+        }
+
+        // ============ МОДУЛЬ СТАТУСА АККАУНТОВ И СКУД ============
+        let currentStatusMode = localStorage.getItem('status_check_mode') || 'FLOW';
+
+        function updateStatusUI() {
+            const display = document.getElementById('status-target-display');
+            const btnFlow = document.getElementById('btn-status-flow');
+            const btnGroup = document.getElementById('btn-status-group');
+
+            if (btnFlow) btnFlow.classList.toggle('active', currentStatusMode === 'FLOW');
+            if (btnGroup) btnGroup.classList.toggle('active', currentStatusMode === 'MY_GROUP');
+
+            if (display) {
+                display.innerText = (currentStatusMode === 'MY_GROUP') ? 'TARGET: GROUP' : 'TARGET: FLOW';
+            }
+        }
+
+        function selectStatusMode(mode) {
+            currentStatusMode = mode;
+            localStorage.setItem('status_check_mode', mode);
+            playSciFiBeep(750, 0.06);
+            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            updateStatusUI();
+        }
+
+        function startStatusCheck() {
+            playSciFiBeep(920, 0.1);
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
+            const btn = document.getElementById('btn-run-check');
+            if (btn) {
+                btn.innerHTML = '<span>⏳ Запрос отправлен боту...</span>';
+                btn.style.opacity = '0.7';
+            }
+
+            if (tg?.sendData) {
+                const payload = JSON.stringify({
+                    action: 'check_status',
+                    scope: currentStatusMode
+                });
+                tg.sendData(payload);
+                tg.close();
+            } else {
+                alert('Проверка статуса запускается внутри Telegram. Запрос отправлен боту.');
+                if (btn) {
+                    btn.innerHTML = '<span style="font-size:18px;">🩺</span><span>Запустить опрос СКУД</span>';
+                    btn.style.opacity = '1';
+                }
             }
         }
 
@@ -1321,6 +1483,7 @@
             activeWeekMode = mode;
             if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
             updateWeekUI();
+            updateDayTabs();
             renderSchedule();
         }
 
@@ -1345,10 +1508,43 @@
             renderSchedule();
         }
 
+        // Вычисление дат с ПН по СБ для выбранной недели (текущей или следующей)
         function updateDayTabs() {
-            document.querySelectorAll('.day-tab').forEach((tab, idx) => {
-                tab.classList.toggle('active', idx === currentDayIdx);
-            });
+            const daysBar = document.getElementById('days-bar');
+            if (!daysBar) return;
+            daysBar.innerHTML = '';
+
+            const dayNames = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
+            const today = new Date();
+            const realTodayDayIdx = (today.getDay() + 6) % 7; // 0=ПН..6=ВС
+
+            // Находим дату понедельника текущей календарной недели
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - realTodayDayIdx);
+            if (activeWeekMode === 'next') {
+                monday.setDate(monday.getDate() + 7);
+            }
+
+            for (let i = 0; i < 6; i++) {
+                const dayDate = new Date(monday);
+                dayDate.setDate(monday.getDate() + i);
+                const dayNumber = dayDate.getDate();
+
+                const isToday = (activeWeekMode === 'current' && i === realTodayDayIdx);
+                const isActive = (i === currentDayIdx);
+
+                const btn = document.createElement('button');
+                btn.className = 'day-tab' + (isActive ? ' active' : '');
+                btn.onclick = () => setDay(i);
+
+                btn.innerHTML = `
+                    <span class="day-tab-name">${dayNames[i]}</span>
+                    <span class="day-tab-num">${dayNumber}</span>
+                    ${isToday ? '<span class="day-today-dot"></span>' : '<span style="height:4px;"></span>'}
+                `;
+
+                daysBar.appendChild(btn);
+            }
         }
 
         function renderSchedule() {
