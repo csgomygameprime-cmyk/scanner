@@ -853,30 +853,88 @@
             gap: 10px;
         }
 
-        .parity-toggle {
+        .week-stepper {
             display: flex;
-            background: rgba(10, 4, 22, 0.8);
-            border: 1px solid rgba(192, 132, 252, 0.3);
-            border-radius: 14px;
-            padding: 3px;
+            align-items: center;
+            gap: 8px;
+            background: rgba(10, 4, 22, 0.85);
+            border: 1px solid rgba(192, 132, 252, 0.35);
+            border-radius: 16px;
+            padding: 4px 6px;
         }
 
-        .parity-btn {
-            padding: 5px 12px;
-            border-radius: 11px;
+        .week-step-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
             border: none;
-            background: transparent;
-            color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .week-step-btn:active {
+            background: var(--neon-cyan);
+            color: #000;
+            transform: scale(0.92);
+        }
+
+        .sched-week-title {
+            font-size: 12.5px;
+            font-weight: 800;
+            color: #ffffff;
+            padding: 0 4px;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-today-reset {
+            padding: 5px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--neon-cyan);
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--neon-cyan);
+            font-size: 11.5px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-today-reset:active {
+            transform: scale(0.92);
+            background: var(--neon-cyan);
+            color: #000;
+        }
+
+        /* Кнопка журнала группы в карточке пары */
+        .journal-tag-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(192, 132, 252, 0.4);
+            background: rgba(147, 51, 234, 0.15);
+            color: rgba(255, 255, 255, 0.85);
             font-size: 11.5px;
             font-weight: 700;
             cursor: pointer;
+            white-space: nowrap;
             transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .parity-btn.active {
-            background: linear-gradient(135deg, #9333ea, #c084fc);
-            color: #ffffff;
-            box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+        .journal-tag-btn:active {
+            background: rgba(147, 51, 234, 0.45);
+            border-color: var(--neon-purple);
+            transform: scale(0.94);
         }
 
         .days-bar {
@@ -1245,15 +1303,14 @@
                 <button class="group-chip" onclick="selectSchedGroup('УИБО-04-24')">УИБО-04-24</button>
             </div>
 
-            <!-- Управление неделей и днями -->
+            <!-- Управление неделями со стрелками и свайпом -->
             <div class="sched-controls-row">
-                <div class="parity-toggle">
-                    <button class="parity-btn active" id="btn-week-curr" onclick="setWeekView('current')">Текущая</button>
-                    <button class="parity-btn" id="btn-week-next" onclick="setWeekView('next')">Следующая</button>
+                <div class="week-stepper">
+                    <button class="week-step-btn" onclick="changeWeek(-1)" title="Предыдущая неделя">❮</button>
+                    <div id="sched-week-label" class="sched-week-title">7 неделя</div>
+                    <button class="week-step-btn" onclick="changeWeek(1)" title="Следующая неделя">❯</button>
                 </div>
-                <div style="font-size:11.5px; color:rgba(255,255,255,0.5); font-weight:600;" id="sched-week-label">
-                    Сегодня
-                </div>
+                <button class="btn-today-reset" id="btn-today-reset" onclick="resetToCurrentWeek()" style="display:none;">🎯 Сегодня</button>
             </div>
 
             <!-- Календарная полоска дней с числами месяца -->
@@ -1513,15 +1570,38 @@
         const nowMs = Date.now();
         const curWeekNum = Math.max(1, Math.floor((nowMs - semStart.getTime()) / (7 * 24 * 3600 * 1000)) + 1);
         
-        // Режим просмотра: 'current' (текущая) или 'next' (следующая)
-        let activeWeekMode = 'current';
+        // Активный номер недели (можно листать от 1 до 18)
+        let activeWeekNumber = curWeekNum;
 
         function getActiveWeekNum() {
-            return activeWeekMode === 'current' ? curWeekNum : (curWeekNum + 1);
+            return activeWeekNumber;
         }
 
         function getActiveParity() {
-            return (getActiveWeekNum() % 2 === 1) ? 'odd' : 'even';
+            return (activeWeekNumber % 2 === 1) ? 'odd' : 'even';
+        }
+
+        function changeWeek(delta) {
+            const newW = activeWeekNumber + delta;
+            if (newW < 1 || newW > 18) return;
+            activeWeekNumber = newW;
+            playSciFiBeep(780, 0.05);
+            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            updateWeekUI();
+            updateDayTabs();
+            renderSchedule();
+        }
+
+        function resetToCurrentWeek() {
+            activeWeekNumber = curWeekNum;
+            const now = new Date();
+            currentDayIdx = (now.getDay() + 6) % 7;
+            if (currentDayIdx === 6) currentDayIdx = 0;
+            playSciFiBeep(880, 0.08);
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            updateWeekUI();
+            updateDayTabs();
+            renderSchedule();
         }
 
         function initSchedule() {
@@ -1529,6 +1609,7 @@
             updateGroupChips();
             updateWeekUI();
             updateDayTabs();
+            setupScheduleSwipe();
             renderSchedule();
         }
 
@@ -1546,25 +1627,59 @@
             });
         }
 
-        function setWeekView(mode) {
-            activeWeekMode = mode;
-            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
-            updateWeekUI();
-            updateDayTabs();
-            renderSchedule();
-        }
-
         function updateWeekUI() {
-            const btnCurr = document.getElementById('btn-week-curr');
-            const btnNext = document.getElementById('btn-week-next');
-            if (btnCurr) btnCurr.classList.toggle('active', activeWeekMode === 'current');
-            if (btnNext) btnNext.classList.toggle('active', activeWeekMode === 'next');
-
-            const wNum = getActiveWeekNum();
+            const wNum = activeWeekNumber;
             const parityName = (wNum % 2 === 1) ? 'нечётная' : 'чётная';
             const labelEl = document.getElementById('sched-week-label');
             if (labelEl) {
                 labelEl.innerText = `${wNum} неделя (${parityName})`;
+            }
+
+            const btnToday = document.getElementById('btn-today-reset');
+            if (btnToday) {
+                btnToday.style.display = (activeWeekNumber === curWeekNum) ? 'none' : 'inline-block';
+            }
+        }
+
+        // ============ АККУРАТНЫЙ СВАЙП НЕДЕЛЬ ВЛЕВО / ВПРАВО ============
+        function setupScheduleSwipe() {
+            const container = document.getElementById('schedule-view-container');
+            if (!container) return;
+
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchEndX = 0;
+            let touchEndY = 0;
+
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+
+            container.addEventListener('touchend', (e) => {
+                if (e.changedTouches.length === 1) {
+                    touchEndX = e.changedTouches[0].clientX;
+                    touchEndY = e.changedTouches[0].clientY;
+                    handleSwipe();
+                }
+            }, { passive: true });
+
+            function handleSwipe() {
+                const diffX = touchEndX - touchStartX;
+                const diffY = touchEndY - touchStartY;
+
+                // Свайп только если горизонтальное движение больше вертикального
+                if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+                    if (diffX < 0) {
+                        // Свайп влево -> Следующая неделя
+                        changeWeek(1);
+                    } else {
+                        // Свайп вправо -> Предыдущая неделя
+                        changeWeek(-1);
+                    }
+                }
             }
         }
 
@@ -1585,19 +1700,16 @@
             const today = new Date();
             const realTodayDayIdx = (today.getDay() + 6) % 7; // 0=ПН..6=ВС
 
-            // Находим дату понедельника текущей календарной недели
-            const monday = new Date(today);
-            monday.setDate(today.getDate() - realTodayDayIdx);
-            if (activeWeekMode === 'next') {
-                monday.setDate(monday.getDate() + 7);
-            }
+            // Находим дату понедельника для выбранного номера недели
+            const monday = new Date(semStart);
+            monday.setDate(semStart.getDate() + (activeWeekNumber - 1) * 7);
 
             for (let i = 0; i < 6; i++) {
                 const dayDate = new Date(monday);
                 dayDate.setDate(monday.getDate() + i);
                 const dayNumber = dayDate.getDate();
 
-                const isToday = (activeWeekMode === 'current' && i === realTodayDayIdx);
+                const isToday = (activeWeekNumber === curWeekNum && i === realTodayDayIdx);
                 const isActive = (i === currentDayIdx);
 
                 const btn = document.createElement('button');
@@ -1640,7 +1752,7 @@
             const todayDayIdx = (now.getDay() + 6) % 7;
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
             // Подсветка активна только если выбран СЕГОДНЯШНИЙ день на ТЕКУЩЕЙ неделе
-            const isTodayActive = (activeWeekMode === 'current' && currentDayIdx === todayDayIdx);
+            const isTodayActive = (activeWeekNumber === curWeekNum && currentDayIdx === todayDayIdx);
 
             filtered.forEach((lesson, idx) => {
                 const [tStartStr, tEndStr] = (lesson.time || '').split('-').map(s => s.trim());
@@ -1749,7 +1861,13 @@
                     <div class="lesson-title">${lesson.title}</div>
                     <div class="lesson-footer">
                         ${teacherHtml}
-                        ${roomBtnHtml}
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button class="journal-tag-btn" onclick="requestLessonJournal('${lesson.pairNum}', '${lesson.time}', '${lesson.title.replace(/'/g, "\\'")}')">
+                                <span>👥</span>
+                                <span>Журнал</span>
+                            </button>
+                            ${roomBtnHtml}
+                        </div>
                     </div>
                 `;
 
@@ -1765,6 +1883,26 @@
                 renderSchedule();
             }
         }, 60000);
+
+        
+        function requestLessonJournal(pairNum, time, title) {
+            playSciFiBeep(920, 0.08);
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
+            if (tg?.sendData) {
+                const payload = JSON.stringify({
+                    action: 'check_lesson_journal',
+                    group: currentGroup,
+                    pairNum: pairNum,
+                    time: time,
+                    title: title
+                });
+                tg.sendData(payload);
+                tg.close();
+            } else {
+                alert(`Журнал для группы ${currentGroup} (${title}) запрашивается через Telegram бота`);
+            }
+        }
 
         function goToRoomOnMap(roomCode, campusHint) {
             playSciFiBeep(940, 0.08);
