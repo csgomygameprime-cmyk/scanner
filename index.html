@@ -1074,10 +1074,84 @@
 
         .lesson-teacher {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.65);
+            color: rgba(255, 255, 255, 0.75);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            cursor: pointer;
+            padding: 3px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(192, 132, 252, 0.2);
+            border-radius: 8px;
+            max-width: 48%;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .lesson-teacher:active {
+            background: rgba(192, 132, 252, 0.25);
+            transform: scale(0.96);
+            border-color: var(--neon-purple);
+        }
+
+        /* Кибер-плашка полного ФИО преподавателя (Toast) */
+        .teacher-toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-30px) scale(0.95);
+            background: rgba(18, 10, 36, 0.95);
+            border: 1px solid var(--neon-purple);
+            box-shadow: 0 8px 32px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(168, 85, 247, 0.2);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 12px 18px;
+            border-radius: 16px;
+            z-index: 99999;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 90vw;
+            width: max-content;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .teacher-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0) scale(1);
+        }
+
+        .teacher-toast-icon {
+            font-size: 22px;
+            filter: drop-shadow(0 0 8px var(--neon-purple));
+        }
+
+        .teacher-toast-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: left;
+        }
+
+        .teacher-toast-title {
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: rgba(192, 132, 252, 0.85);
+            font-weight: 800;
+        }
+
+        .teacher-toast-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.2px;
         }
 
         /* Кнопка кабинета с интерактивным переходом */
@@ -1270,8 +1344,7 @@
                 </div>
             </div>
 
-            <h1>PULSE SCANNER</h1>
-            <p class="subtitle">Параллельный залп по сокетам (&lt;0.1s)</p>
+            <h1 style="margin-bottom: 16px;">PULSE SCANNER</h1>
 
             <div class="mode-toggle-container">
                 <button class="toggle-btn active" id="btn-flow" onclick="selectMode('FLOW')">
@@ -1389,8 +1462,7 @@
                     <span style="font-size:36px; filter: drop-shadow(0 0 10px #38bdf8);">🩺</span>
                 </div>
 
-                <h1 style="font-size: 20px; margin-bottom: 4px;">СТАТУС И СКУД</h1>
-                <p class="subtitle" style="margin-bottom: 16px;">gRPC проверка токенов и турникетов</p>
+                <h1 style="font-size: 20px; margin-bottom: 16px;">ПРОВЕРКА ТУРНИКЕТОВ</h1>
 
                 <!-- Выбор области проверки -->
                 <div class="mode-toggle-container">
@@ -1405,7 +1477,7 @@
                 <!-- Главная кнопка проверки -->
                 <button class="cyber-btn" id="btn-run-check" onclick="startStatusCheck()">
                     <span style="font-size:18px;">🩺</span>
-                    <span>Запустить опрос СКУД</span>
+                    <span>Запустить</span>
                 </button>
 
 
@@ -1551,7 +1623,7 @@
             } else {
                 alert('Проверка статуса запускается внутри Telegram. Запрос отправлен боту.');
                 if (btn) {
-                    btn.innerHTML = '<span style="font-size:18px;">🩺</span><span>Запустить опрос СКУД</span>';
+                    btn.innerHTML = '<span style="font-size:18px;">🩺</span><span>Запустить</span>';
                     btn.style.opacity = '1';
                 }
             }
@@ -1837,7 +1909,10 @@
                 else if (t === 'ЛАБ') badgeCls = 'badge-lab';
                 else if (t === 'СР') badgeCls = 'badge-sr';
 
-                const teacherHtml = lesson.teacher ? `<span class="lesson-teacher">👤 ${lesson.teacher}</span>` : '<span></span>';
+                const teacherEscaped = (lesson.teacher || '').replace(/'/g, "\\'");
+                const teacherHtml = lesson.teacher 
+                    ? `<span class="lesson-teacher" onclick="showTeacherToast('${teacherEscaped}')" title="Показать ФИО целиком">👤 ${lesson.teacher}</span>` 
+                    : '<span></span>';
 
                 let roomBtnHtml = '';
                 const rLower = (lesson.room || '').toLowerCase();
@@ -1892,6 +1967,43 @@
 
                 list.appendChild(card);
             });
+        }
+
+        // ============ ВСПЛЫВАЮЩАЯ ПЛАШКА ФИО ПРЕПОДАВАТЕЛЯ ============
+        let teacherToastTimer = null;
+        function showTeacherToast(fullName) {
+            if (!fullName) return;
+            playSciFiBeep(880, 0.05);
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+            let toast = document.getElementById('teacher-toast-popup');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'teacher-toast-popup';
+                toast.className = 'teacher-toast';
+                document.body.appendChild(toast);
+            }
+
+            toast.innerHTML = `
+                <div class="teacher-toast-icon">👨‍🏫</div>
+                <div class="teacher-toast-content">
+                    <div class="teacher-toast-title">Преподаватель</div>
+                    <div class="teacher-toast-name">${fullName}</div>
+                </div>
+            `;
+
+            // Сброс предыдущего таймаута
+            if (teacherToastTimer) clearTimeout(teacherToastTimer);
+
+            // Анимация показа
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            // Автоскрытие через 3.2 сек
+            teacherToastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3200);
         }
 
         // ============ ПЕРЕХОД НА КАРТУ ПРИ КЛИКЕ НА КАБИНЕТ ============
