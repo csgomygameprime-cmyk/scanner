@@ -348,7 +348,7 @@
         /* ============ НАВИГАЦИОННЫЙ ТАБ-БАР ============ */
         .bottom-nav-container {
             position: fixed;
-            bottom: 24px;
+            bottom: 48px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
@@ -629,7 +629,7 @@
 
         .map-controls {
             position: absolute;
-            bottom: 82px;
+            bottom: 106px;
             right: 12px;
             z-index: 120;
             display: flex;
@@ -818,32 +818,189 @@
 
         .sched-group-picker {
             display: flex;
+            align-items: center;
+            justify-content: space-between;
             gap: 8px;
-            overflow-x: auto;
-            scrollbar-width: none;
-            padding-bottom: 2px;
+            width: 100%;
         }
-        .sched-group-picker::-webkit-scrollbar { display: none; }
 
-        .group-chip {
-            padding: 8px 14px;
-            border-radius: 16px;
-            border: 1px solid rgba(192, 132, 252, 0.3);
-            background: rgba(28, 14, 52, 0.7);
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 13px;
-            font-weight: 700;
-            white-space: nowrap;
+        .group-selector-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(192, 132, 252, 0.4);
+            background: linear-gradient(135deg, rgba(28, 14, 52, 0.85) 0%, rgba(18, 10, 36, 0.95) 100%);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 0 12px rgba(168, 85, 247, 0.15);
+            color: #ffffff;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             -webkit-tap-highlight-color: transparent;
         }
 
-        .group-chip.active {
-            background: linear-gradient(135deg, rgba(147, 51, 234, 0.8), rgba(192, 132, 252, 0.4));
-            border-color: rgba(192, 132, 252, 0.7);
+        .group-selector-btn:active {
+            transform: scale(0.98);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
+        }
+
+        .group-selector-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .group-selector-icon {
+            font-size: 16px;
+            filter: drop-shadow(0 0 6px var(--neon-purple));
+        }
+
+        .group-selector-name {
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
             color: #ffffff;
-            box-shadow: 0 0 16px rgba(168, 85, 247, 0.4);
+        }
+
+        .group-selector-arrow {
+            font-size: 11px;
+            color: rgba(192, 132, 252, 0.7);
+            background: rgba(255, 255, 255, 0.06);
+            padding: 3px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(192, 132, 252, 0.25);
+            transition: transform 0.25s ease;
+        }
+
+        /* Модальное окно выбора группы */
+        .group-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(4, 1, 10, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .group-modal-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .group-modal-sheet {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(18, 10, 36, 0.98);
+            border: 1px solid var(--neon-purple);
+            border-bottom: none;
+            border-radius: 26px 26px 0 0;
+            box-shadow: 0 -10px 40px rgba(168, 85, 247, 0.4), inset 0 0 20px rgba(168, 85, 247, 0.15);
+            padding: 18px 20px 45px;
+            box-sizing: border-box;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .group-modal-backdrop.open .group-modal-sheet {
+            transform: translateY(0);
+        }
+
+        .group-modal-handle {
+            width: 40px;
+            height: 4px;
+            background: rgba(192, 132, 252, 0.4);
+            border-radius: 2px;
+            margin: 0 auto 4px;
+        }
+
+        .group-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .group-modal-title {
+            font-size: 15px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .group-modal-close {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .group-modal-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .group-modal-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 18px;
+            border-radius: 16px;
+            border: 1px solid rgba(192, 132, 252, 0.25);
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .group-modal-item:active {
+            transform: scale(0.98);
+        }
+
+        .group-modal-item.active {
+            border-color: var(--neon-cyan);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.18) 0%, rgba(168, 85, 247, 0.22) 100%);
+            color: #ffffff;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
+        }
+
+        .group-modal-item-check {
+            font-size: 16px;
+            color: var(--neon-cyan);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .group-modal-item.active .group-modal-item-check {
+            opacity: 1;
         }
 
         .sched-controls-row {
@@ -999,7 +1156,7 @@
         .sched-list {
             flex: 1;
             overflow-y: auto;
-            padding: 14px 16px 85px;
+            padding: 14px 16px 110px;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -1368,12 +1525,14 @@
     <!-- Вкладка: РАСПИСАНИЕ -->
     <div id="schedule-view-container">
         <div class="sched-topbar">
-            <!-- Выбор группы (в строгом порядке 01, 02, 03, 04) -->
+            <!-- Выбор группы через всплывающую плашку -->
             <div class="sched-group-picker" id="sched-group-picker">
-                <button class="group-chip active" onclick="selectSchedGroup('УИБО-01-24')">УИБО-01-24</button>
-                <button class="group-chip" onclick="selectSchedGroup('УИБО-02-24')">УИБО-02-24</button>
-                <button class="group-chip" onclick="selectSchedGroup('УИБО-03-24')">УИБО-03-24</button>
-                <button class="group-chip" onclick="selectSchedGroup('УИБО-04-24')">УИБО-04-24</button>
+                <button class="group-selector-btn" onclick="openGroupModal()" title="Сменить учебную группу">
+                    <div class="group-selector-left">
+                        <span class="group-selector-name" id="current-group-label">УИБО-01-24</span>
+                    </div>
+                    <span class="group-selector-arrow">Выбрать ▾</span>
+                </button>
             </div>
 
             <!-- Управление неделями со стрелками и свайпом -->
@@ -1394,6 +1553,35 @@
 
         <div class="sched-list" id="sched-list">
             <!-- Динамические карточки пар -->
+        </div>
+    </div>
+
+    <!-- Всплывающая плашка выбора группы (Bottom Sheet Modal) -->
+    <div class="group-modal-backdrop" id="group-modal-backdrop" onclick="closeGroupModal(event)">
+        <div class="group-modal-sheet" onclick="event.stopPropagation()">
+            <div class="group-modal-handle"></div>
+            <div class="group-modal-header">
+                <div class="group-modal-title">Выбор группы</div>
+                <button class="group-modal-close" onclick="closeGroupModal()">✕</button>
+            </div>
+            <div class="group-modal-list" id="group-modal-list">
+                <button class="group-modal-item" onclick="selectSchedGroup('УИБО-01-24')">
+                    <span>УИБО-01-24</span>
+                    <span class="group-modal-item-check">✓</span>
+                </button>
+                <button class="group-modal-item" onclick="selectSchedGroup('УИБО-02-24')">
+                    <span>УИБО-02-24</span>
+                    <span class="group-modal-item-check">✓</span>
+                </button>
+                <button class="group-modal-item" onclick="selectSchedGroup('УИБО-03-24')">
+                    <span>УИБО-03-24</span>
+                    <span class="group-modal-item-check">✓</span>
+                </button>
+                <button class="group-modal-item" onclick="selectSchedGroup('УИБО-04-24')">
+                    <span>УИБО-04-24</span>
+                    <span class="group-modal-item-check">✓</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1678,24 +1866,47 @@
 
         function initSchedule() {
             schedInitialized = true;
-            updateGroupChips();
+            updateGroupSelectorUI();
             updateWeekUI();
             updateDayTabs();
             setupScheduleSwipe();
             renderSchedule();
         }
 
+        function openGroupModal() {
+            playSciFiBeep(820, 0.05);
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            const modal = document.getElementById('group-modal-backdrop');
+            if (modal) modal.classList.add('open');
+            updateGroupModalUI();
+        }
+
+        function closeGroupModal(e) {
+            if (e && e.target && e.target.closest('.group-modal-sheet') && !e.target.classList.contains('group-modal-close')) return;
+            const modal = document.getElementById('group-modal-backdrop');
+            if (modal) modal.classList.remove('open');
+        }
+
         function selectSchedGroup(grp) {
             currentGroup = grp;
             localStorage.setItem('selected_sched_group', grp);
+            playSciFiBeep(880, 0.06);
             if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
-            updateGroupChips();
+            closeGroupModal();
+            updateGroupSelectorUI();
             renderSchedule();
         }
 
-        function updateGroupChips() {
-            document.querySelectorAll('.group-chip').forEach(btn => {
-                btn.classList.toggle('active', btn.innerText.trim() === currentGroup);
+        function updateGroupSelectorUI() {
+            const lbl = document.getElementById('current-group-label');
+            if (lbl) lbl.innerText = currentGroup;
+            updateGroupModalUI();
+        }
+
+        function updateGroupModalUI() {
+            document.querySelectorAll('.group-modal-item').forEach(item => {
+                const text = item.querySelector('span')?.innerText?.trim();
+                item.classList.toggle('active', text === currentGroup);
             });
         }
 
@@ -1707,16 +1918,20 @@
                 labelEl.innerText = `${wNum} неделя (${parityName})`;
             }
 
+            const today = new Date();
+            let realTodayDayIdx = (today.getDay() + 6) % 7; // 0=ПН..6=ВС
+            if (realTodayDayIdx === 6) realTodayDayIdx = 0; // ВС -> ПН
+
+            const isCurrentToday = (activeWeekNumber === curWeekNum && currentDayIdx === realTodayDayIdx);
             const btnToday = document.getElementById('btn-today-reset');
             if (btnToday) {
-                btnToday.style.display = (activeWeekNumber === curWeekNum) ? 'none' : 'inline-block';
+                btnToday.style.display = isCurrentToday ? 'none' : 'inline-block';
             }
         }
 
         // ============ АККУРАТНЫЙ СВАЙП НЕДЕЛЬ ВЛЕВО / ВПРАВО ============
         function setupScheduleSwipe() {
-            // Привязываем свайп только к области со списком пар (sched-list),
-            // чтобы горизонтальный скролл списка групп или дней в topbar не переключал неделю
+            // Свайп по списку пар листает недели (влево — следующая неделя, вправо — предыдущая)
             const listEl = document.getElementById('sched-list') || document.getElementById('schedule-view-container');
             if (!listEl) return;
 
@@ -1728,8 +1943,8 @@
 
             listEl.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
-                    // Если жест начался внутри topbar (выбор группы, дни и т.д.), игнорируем свайп недели
-                    if (e.target.closest('.sched-topbar') || e.target.closest('.sched-group-picker') || e.target.closest('.days-bar')) {
+                    // Если жест начался внутри модалки выбора группы, игнорируем
+                    if (e.target.closest('.group-modal-backdrop') || e.target.closest('.group-selector-btn')) {
                         ignoreSwipe = true;
                         return;
                     }
@@ -1753,7 +1968,7 @@
                 const diffY = touchEndY - touchStartY;
 
                 // Свайп только если горизонтальное движение больше вертикального
-                if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+                if (Math.abs(diffX) > 55 && Math.abs(diffX) > Math.abs(diffY) * 1.4) {
                     if (diffX < 0) {
                         // Свайп влево -> Следующая неделя
                         changeWeek(1);
@@ -1768,6 +1983,7 @@
         function setDay(dayIdx) {
             currentDayIdx = dayIdx;
             if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            updateWeekUI();
             updateDayTabs();
             renderSchedule();
         }
