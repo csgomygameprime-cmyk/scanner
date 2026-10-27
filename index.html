@@ -1929,55 +1929,61 @@
             }
         }
 
-        // ============ АККУРАТНЫЙ СВАЙП НЕДЕЛЬ ВЛЕВО / ВПРАВО ============
+        // ============ АККУРАТНЫЙ СВАЙП НЕДЕЛЬ ВЛЕВО / ВПРАВО (СТРОГО ПО ПОЛОСКЕ ДАТ) ============
         function setupScheduleSwipe() {
-            // Свайп по списку пар листает недели (влево — следующая неделя, вправо — предыдущая)
-            const listEl = document.getElementById('sched-list') || document.getElementById('schedule-view-container');
-            if (!listEl) return;
+            // Зона свайпа — СТРОГО полоска дат (days-bar)
+            // По списку пар (sched-list) и по шапке выбора групп свайпов НЕТ
+            const daysBar = document.getElementById('days-bar');
+            if (!daysBar) return;
 
             let touchStartX = 0;
             let touchStartY = 0;
-            let touchEndX = 0;
-            let touchEndY = 0;
-            let ignoreSwipe = false;
+            let isSwiping = false;
 
-            listEl.addEventListener('touchstart', (e) => {
+            daysBar.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
-                    // Если жест начался внутри модалки выбора группы, игнорируем
-                    if (e.target.closest('.group-modal-backdrop') || e.target.closest('.group-selector-btn')) {
-                        ignoreSwipe = true;
-                        return;
-                    }
-                    ignoreSwipe = false;
                     touchStartX = e.touches[0].clientX;
                     touchStartY = e.touches[0].clientY;
+                    isSwiping = false;
                 }
             }, { passive: true });
 
-            listEl.addEventListener('touchend', (e) => {
-                if (ignoreSwipe) return;
-                if (e.changedTouches.length === 1) {
-                    touchEndX = e.changedTouches[0].clientX;
-                    touchEndY = e.changedTouches[0].clientY;
-                    handleSwipe();
-                }
-            }, { passive: true });
-
-            function handleSwipe() {
-                const diffX = touchEndX - touchStartX;
-                const diffY = touchEndY - touchStartY;
-
-                // Свайп только если горизонтальное движение больше вертикального
-                if (Math.abs(diffX) > 55 && Math.abs(diffX) > Math.abs(diffY) * 1.4) {
-                    if (diffX < 0) {
-                        // Свайп влево -> Следующая неделя
-                        changeWeek(1);
-                    } else {
-                        // Свайп вправо -> Предыдущая неделя
-                        changeWeek(-1);
+            daysBar.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1) {
+                    const diffX = e.touches[0].clientX - touchStartX;
+                    const diffY = e.touches[0].clientY - touchStartY;
+                    if (Math.abs(diffX) > 25 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
+                        isSwiping = true;
                     }
                 }
-            }
+            }, { passive: true });
+
+            daysBar.addEventListener('touchend', (e) => {
+                if (e.changedTouches.length === 1) {
+                    const touchEndX = e.changedTouches[0].clientX;
+                    const touchEndY = e.changedTouches[0].clientY;
+                    const diffX = touchEndX - touchStartX;
+                    const diffY = touchEndY - touchStartY;
+
+                    // Если был горизонтальный свайп по полоске дат — переключаем неделю
+                    if (Math.abs(diffX) > 35 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
+                        if (diffX < 0) {
+                            changeWeek(1);  // Свайп влево -> Следующая неделя
+                        } else {
+                            changeWeek(-1); // Свайп вправо -> Предыдущая неделя
+                        }
+                    }
+                }
+            }, { passive: true });
+
+            // Блокируем клик по дню, если палец свайпал полоску дат
+            daysBar.addEventListener('click', (e) => {
+                if (isSwiping) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    isSwiping = false;
+                }
+            }, true);
         }
 
         function setDay(dayIdx) {
