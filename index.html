@@ -664,7 +664,7 @@
 
         .room-info-card {
             position: absolute;
-            bottom: 80px;
+            bottom: 104px;
             left: 12px;
             max-width: calc(100vw - 80px);
             background: rgba(18, 10, 36, 0.92);
@@ -1871,6 +1871,15 @@
             updateDayTabs();
             setupScheduleSwipe();
             renderSchedule();
+            // Фикс: добавляем touchend обработчик на кнопку "Сегодня"
+            // чтобы она срабатывала с первого тапа в Telegram WebApp
+            const btnToday = document.getElementById('btn-today-reset');
+            if (btnToday) {
+                btnToday.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    resetToCurrentWeek();
+                }, { passive: false });
+            }
         }
 
         function openGroupModal() {
